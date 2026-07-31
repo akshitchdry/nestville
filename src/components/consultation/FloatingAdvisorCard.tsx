@@ -2,13 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import {
-  Phone,
-  Mail,
-  CalendarDays,
-  Star,
-  ArrowUpRight,
-} from "lucide-react";
+import { Phone, Mail, CalendarDays, Star, ArrowUpRight } from "lucide-react";
 
 export default function FloatingAdvisorCard() {
   return (
@@ -33,7 +27,7 @@ export default function FloatingAdvisorCard() {
           ease: "easeInOut",
         },
         opacity: {
-          duration: .8,
+          duration: 0.8,
         },
       }}
       className="
@@ -91,33 +85,24 @@ export default function FloatingAdvisorCard() {
             </span>
 
             <h3 className="mt-2 text-3xl font-light text-white">
-              Daniel Morgan
+              Nayan choudhary
             </h3>
 
-            <p className="mt-2 text-white/50">
-              Luxury Property Consultant
-            </p>
+            <p className="mt-2 text-white/50">Luxury Property Consultant</p>
           </div>
         </div>
 
         <div className="mt-8 flex items-center gap-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Star
-              key={i}
-              size={16}
-              className="fill-[#d6b56a] text-[#d6b56a]"
-            />
+            <Star key={i} size={16} className="fill-[#d6b56a] text-[#d6b56a]" />
           ))}
 
-          <span className="ml-2 text-sm text-white/45">
-            4.9 Client Rating
-          </span>
+          <span className="ml-2 text-sm text-white/45">4.9 Client Rating</span>
         </div>
 
         <p className="mt-8 text-[15px] leading-8 text-white/65">
-          Schedule a one-on-one consultation with our senior advisor
-          to discover premium residences tailored to your lifestyle
-          and investment goals.
+          Schedule a one-on-one consultation with our senior advisor to discover
+          premium residences tailored to your lifestyle and investment goals.
         </p>
 
         <motion.div
@@ -146,29 +131,17 @@ export default function FloatingAdvisorCard() {
 
         <div className="mt-8 space-y-4">
           <div className="flex items-center gap-4 text-white/70">
-            <Phone
-              size={18}
-              className="text-[#d6b56a]"
-            />
-
-            +971 50 456 7890
+            <Phone size={18} className="text-[#d6b56a]" />
+            +99672969593
           </div>
 
           <div className="flex items-center gap-4 text-white/70">
-            <Mail
-              size={18}
-              className="text-[#d6b56a]"
-            />
-
+            <Mail size={18} className="text-[#d6b56a]" />
             advisor@nestville.com
           </div>
 
           <div className="flex items-center gap-4 text-white/70">
-            <CalendarDays
-              size={18}
-              className="text-[#d6b56a]"
-            />
-
+            <CalendarDays size={18} className="text-[#d6b56a]" />
             Mon – Sat • 9:00 AM – 7:00 PM
           </div>
         </div>
@@ -178,7 +151,7 @@ export default function FloatingAdvisorCard() {
             scale: 1.03,
           }}
           whileTap={{
-            scale: .97,
+            scale: 0.97,
           }}
           className="
             mt-10
@@ -201,7 +174,6 @@ export default function FloatingAdvisorCard() {
           "
         >
           Schedule Consultation
-
           <ArrowUpRight size={18} />
         </motion.button>
       </div>

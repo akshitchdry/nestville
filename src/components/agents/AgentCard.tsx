@@ -83,7 +83,7 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
           w-60
           rounded-full
           bg-[#c8a35b]/0
-          blur-[90px]
+          
           transition-all
           duration-700
           group-hover:bg-[#c8a35b]/15
@@ -176,7 +176,7 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
             from-transparent
             via-white/15
             to-transparent
-            blur-xl
+            
           "
         />
 
@@ -204,7 +204,7 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
               bg-black/35
               px-3.5
               py-2.5
-              backdrop-blur-xl
+              
             "
           >
             <span
@@ -241,7 +241,7 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
               uppercase
               tracking-[0.2em]
               text-[#e0c078]
-              backdrop-blur-xl
+             
             "
           >
             {agent.experience}
@@ -264,7 +264,7 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
               border-white/10
               bg-black/45
               p-5
-              backdrop-blur-2xl
+            
             "
           >
             <div
@@ -478,7 +478,7 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
                   uppercase
                   tracking-[0.16em]
                   text-white/80
-                  backdrop-blur-xl
+                 
                 "
               >
                 <Mail

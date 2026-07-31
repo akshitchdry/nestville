@@ -59,7 +59,7 @@ export default function Testimonials() {
             once: true,
           }}
           transition={{
-            duration: .8,
+            duration: 0.8,
           }}
           className="mx-auto mb-20 max-w-3xl text-center"
         >
@@ -69,15 +69,13 @@ export default function Testimonials() {
 
           <h2 className="mt-8 text-5xl font-light leading-tight text-white md:text-6xl">
             Trusted By
-            <span className="block text-[#d6b56a]">
-              Homeowners Worldwide
-            </span>
+            <span className="block text-[#d6b56a]">Homeowners Worldwide</span>
           </h2>
 
           <p className="mx-auto mt-8 max-w-2xl text-lg leading-8 text-white/60">
-            Every successful transaction reflects our commitment to
-            delivering exceptional homes, seamless experiences and
-            long-term relationships with our clients.
+            Every successful transaction reflects our commitment to delivering
+            exceptional homes, seamless experiences and long-term relationships
+            with our clients.
           </p>
         </motion.div>
 
