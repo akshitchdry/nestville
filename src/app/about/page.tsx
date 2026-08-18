@@ -1,0 +1,5 @@
+import Navbar from "@/components/navbar/Navbar";
+import StatsSection from "@/components/stats/StatsSection";
+import Testimonials from "@/components/testimonials/Testimonials";
+import Footer from "@/components/footer/Footer";
+export default function AboutPage(){return <main className="min-h-screen overflow-hidden bg-[#050505] text-white"><Navbar/><section className="relative px-6 pb-24 pt-40"><div className="relative z-10 mx-auto grid max-w-7xl gap-14 lg:grid-cols-[1.1fr_.9fr] lg:items-end"><div><span className="text-[10px] uppercase tracking-[0.4em] text-[#d6b56a]">About NestVille</span><h1 className="mt-7 text-5xl font-light leading-[1.05] sm:text-6xl lg:text-7xl">We Create Homes <span className="block text-[#d6b56a]">That Become Landmarks.</span></h1></div><div><p className="text-base leading-8 text-white/55">NestVille brings together thoughtful architecture, premium locations and refined living experiences.</p><p className="mt-5 text-base leading-8 text-white/40">Every residence is designed around comfort, privacy and enduring value.</p></div></div></section><StatsSection/><Testimonials/><Footer/></main>;}
