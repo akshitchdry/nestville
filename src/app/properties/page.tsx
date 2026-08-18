@@ -1,6 +1,53 @@
 import Navbar from "@/components/navbar/Navbar";
-import PropertyFilters from "@/components/properties/PropertyFilters";
-import PropertyGrid from "@/components/properties/PropertyGrid";
 import Footer from "@/components/footer/Footer";
 
-export default function PropertiesPage(){return <main className="relative min-h-screen overflow-hidden bg-[#050505] text-white"><Navbar/><section className="relative px-6 pb-16 pt-40 text-center"><div className="pointer-events-none absolute left-1/2 top-16 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-[#d4af67]/10 blur-[190px]"/><div className="relative z-10 mx-auto max-w-4xl"><span className="text-[10px] uppercase tracking-[0.4em] text-[#d4af67]">Signature Collection</span><h1 className="mt-7 text-5xl font-light sm:text-6xl lg:text-7xl">Exceptional <span className="block text-[#d4af67]">Properties</span></h1><p className="mx-auto mt-7 max-w-2xl leading-8 text-white/50">Discover villas, penthouses, apartments and landmark residences curated for exceptional living.</p></div></section><PropertyFilters/><PropertyGrid/><Footer/></main>;}
+import PropertyGallery from "@/components/properties/PropertyGallery";
+import PropertyOverview from "@/components/properties/PropertyOverview";
+import PropertyAmenities from "@/components/properties/PropertyAmenities";
+import PropertySidebar from "@/components/properties/PropertySidebar";
+import PropertyAgent from "@/components/properties/PropertyAgent";
+import PropertyMap from "@/components/properties/PropertyMap";
+import SimilarProperties from "@/components/properties/SimilarProperties";
+
+export default function PropertiesPage() {
+  return (
+    <main className="min-h-screen bg-[#050505] text-white">
+      <Navbar />
+
+      <section className="px-6 pb-24 pt-32">
+        <div className="mx-auto max-w-7xl">
+          <PropertyGallery />
+
+          <div className="mt-12 grid gap-12 lg:grid-cols-[1fr_360px]">
+            <div className="space-y-16">
+              <PropertyAmenities />
+              <PropertyAgent />
+              <PropertyMap />
+            </div>
+            <PropertyOverview
+              title="The Grand Aria"
+              description="An exceptional luxury residence designed for refined living, combining timeless architecture, premium materials and modern technology."
+              bedrooms={4}
+              bathrooms={5}
+              area="4,850 sq.ft."
+              type="Luxury Villa"
+              possession="Ready to Move"
+              parking="3 Cars"
+              facing="East"
+            />
+
+            <aside>
+              <PropertySidebar price="₹8.5 Cr" title="The Grand Aria" />
+            </aside>
+          </div>
+
+          <div className="mt-20">
+            <SimilarProperties />
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+    </main>
+  );
+}
