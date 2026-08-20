@@ -374,11 +374,11 @@ export default function Footer() {
             className="
               w-max
               text-[48px]
-              font-light
+              font-dark
               uppercase
               leading-none
               tracking-[0.14em]
-              text-white/[0.035]
+              text-white/[0.10]
               sm:text-[72px]
               lg:text-[96px]
             "
