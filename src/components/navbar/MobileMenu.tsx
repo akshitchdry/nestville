@@ -1,15 +1,11 @@
 ﻿"use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import {
-  ArrowUpRight,
-  X,
-} from "lucide-react";
+import Link from "next/link";
 
-import {
-  FaInstagram,
-  FaLinkedinIn,
-} from "react-icons/fa6";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUpRight, X } from "lucide-react";
+
+import { FaInstagram, FaLinkedinIn } from "react-icons/fa6";
 
 import { navItems } from "./navData";
 
@@ -18,10 +14,7 @@ interface MobileMenuProps {
   onClose: () => void;
 }
 
-export default function MobileMenu({
-  isOpen,
-  onClose,
-}: MobileMenuProps) {
+export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -43,6 +36,8 @@ export default function MobileMenu({
             bg-[#060806]
           "
         >
+          {/* BACKGROUND */}
+
           <motion.div
             initial={{
               scaleX: 0,
@@ -67,8 +62,11 @@ export default function MobileMenu({
             "
           />
 
+          {/* GRID */}
+
           <div
             className="
+              pointer-events-none
               absolute
               inset-0
               opacity-[0.035]
@@ -76,6 +74,8 @@ export default function MobileMenu({
               [background-size:80px_80px]
             "
           />
+
+          {/* CONTENT */}
 
           <div
             className="
@@ -89,9 +89,11 @@ export default function MobileMenu({
               sm:px-10
             "
           >
+            {/* TOP BAR */}
+
             <div className="flex items-center justify-between">
-              <a
-                href="#home"
+              <Link
+                href="/"
                 onClick={onClose}
                 className="
                   font-display
@@ -101,7 +103,7 @@ export default function MobileMenu({
                 "
               >
                 NESTVILLE
-              </a>
+              </Link>
 
               <motion.button
                 type="button"
@@ -132,6 +134,8 @@ export default function MobileMenu({
               </motion.button>
             </div>
 
+            {/* NAVIGATION */}
+
             <div className="flex flex-1 items-center">
               <nav className="w-full">
                 <p
@@ -148,10 +152,8 @@ export default function MobileMenu({
 
                 <div>
                   {navItems.map((item, index) => (
-                    <motion.a
+                    <motion.div
                       key={item.label}
-                      href={item.href}
-                      onClick={onClose}
                       initial={{
                         opacity: 0,
                         x: 60,
@@ -169,59 +171,66 @@ export default function MobileMenu({
                         delay: 0.18 + index * 0.065,
                         ease: [0.22, 1, 0.36, 1],
                       }}
-                      className="
-                        group
-                        flex
-                        items-center
-                        justify-between
-                        border-b
-                        border-white/[0.08]
-                        py-3
-                        sm:py-4
-                      "
                     >
-                      <span
+                      <Link
+                        href={item.href}
+                        onClick={onClose}
                         className="
-                          font-display
-                          text-[clamp(2.3rem,8vw,4.8rem)]
-                          leading-none
-                          text-white/88
-                          transition-all
-                          duration-500
-                          group-hover:translate-x-3
-                          group-hover:text-[#d8b569]
-                        "
-                      >
-                        {item.label}
-                      </span>
-
-                      <span
-                        className="
+                          group
                           flex
-                          h-10
-                          w-10
-                          -rotate-45
                           items-center
-                          justify-center
-                          rounded-full
-                          border
-                          border-white/10
-                          text-white/45
-                          transition-all
-                          duration-500
-                          group-hover:rotate-0
-                          group-hover:border-[#c8a35b]
-                          group-hover:bg-[#c8a35b]
-                          group-hover:text-black
+                          justify-between
+                          border-b
+                          border-white/[0.08]
+                          py-3
+                          sm:py-4
                         "
                       >
-                        <ArrowUpRight size={17} />
-                      </span>
-                    </motion.a>
+                        <span
+                          className="
+                            font-display
+                            text-[clamp(2.3rem,8vw,4.8rem)]
+                            leading-none
+                            text-white/88
+                            transition-all
+                            duration-500
+                            group-hover:translate-x-3
+                            group-hover:text-[#d8b569]
+                          "
+                        >
+                          {item.label}
+                        </span>
+
+                        <span
+                          className="
+                            flex
+                            h-10
+                            w-10
+                            -rotate-45
+                            items-center
+                            justify-center
+                            rounded-full
+                            border
+                            border-white/10
+                            text-white/45
+                            transition-all
+                            duration-500
+                            group-hover:rotate-0
+                            group-hover:border-[#c8a35b]
+                            group-hover:bg-[#c8a35b]
+                            group-hover:text-black
+                          "
+                        >
+                          <ArrowUpRight size={17} />
+                        </span>
+                      </Link>
+                    </motion.div>
                   ))}
                 </div>
               </nav>
             </div>
+
+            {/* BOTTOM */}
 
             <div
               className="
@@ -252,6 +261,9 @@ export default function MobileMenu({
                     block
                     text-sm
                     text-white/70
+                    transition-colors
+                    duration-300
+                    hover:text-[#d8b569]
                   "
                 >
                   hello@nestville.com
@@ -260,7 +272,9 @@ export default function MobileMenu({
 
               <div className="flex gap-2">
                 <a
-                  href="#instagram"
+                  href="https://www.instagram.com/"
+                  target="_blank"
+                  rel="noreferrer"
                   aria-label="Instagram"
                   className="
                     flex
@@ -272,13 +286,20 @@ export default function MobileMenu({
                     border
                     border-white/10
                     text-white/55
+                    transition-all
+                    duration-300
+                    hover:border-[#c8a35b]/40
+                    hover:bg-[#c8a35b]/10
+                    hover:text-[#d8b569]
                   "
                 >
                   <FaInstagram size={16} />
                 </a>
 
                 <a
-                  href="#linkedin"
+                  href="https://www.linkedin.com/"
+                  target="_blank"
+                  rel="noreferrer"
                   aria-label="LinkedIn"
                   className="
                     flex
@@ -290,6 +311,11 @@ export default function MobileMenu({
                     border
                     border-white/10
                     text-white/55
+                    transition-all
+                    duration-300
+                    hover:border-[#c8a35b]/40
+                    hover:bg-[#c8a35b]/10
+                    hover:text-[#d8b569]
                   "
                 >
                   <FaLinkedinIn size={16} />
