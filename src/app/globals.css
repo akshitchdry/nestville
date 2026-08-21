@@ -1,5 +1,72 @@
 @import "tailwindcss";
 
+@import "tailwindcss";
+
+/* =========================================
+   NESTVILLE GLOBAL STYLES
+========================================= */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #060806;
+  color: white;
+}
+
+/* =========================================
+   LOADING ANIMATION
+========================================= */
+
+@keyframes loadingLine {
+  0% {
+    transform: translateX(-180%);
+  }
+
+  100% {
+    transform: translateX(420%);
+  }
+}
+
+/* =========================================
+   SELECTION
+========================================= */
+
+::selection {
+  background: #d6b56a;
+  color: #060806;
+}
+
+/* =========================================
+   SCROLLBAR
+========================================= */
+
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #060806;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(214, 181, 106, 0.45);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(214, 181, 106, 0.7);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(214, 181, 106, 0.45) #060806;
+}
+
 /* :root {
   --background: #060806;
   --background-soft: #0b0f0c;

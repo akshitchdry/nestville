@@ -188,7 +188,7 @@ export default function PropertyAmenities() {
                     group-hover:scale-110
                   "
                 >
-                  <Icon size={28} />
+                  {/* <Icon size={28} /> */}
                 </div>
 
                 <h3 className="mt-8 text-2xl font-light text-white">

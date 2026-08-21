@@ -213,7 +213,7 @@ export default function PropertyMap() {
                         text-[#d4af67]
                       "
                     >
-                      <Icon size={24} />
+                      {/* <Icon size={24} /> */}
                     </div>
 
                     <div>

@@ -326,13 +326,13 @@ function StatBox({
           {value}
         </span>
 
-        {Icon && (
+        {/* {Icon && (
           <Icon
             size={16}
             strokeWidth={1.4}
             className="text-[#d5b369]"
           />
-        )}
+        )} */}
       </div>
 
       <p

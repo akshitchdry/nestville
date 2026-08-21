@@ -1,10 +1,10 @@
 import Navbar from "@/components/navbar/Navbar";
 import Footer from "@/components/footer/Footer";
 
-import AgentsSection from "@/components/agents/AgentsSection";
+import Testimonials from "@/components/testimonials/Testimonials";
 import ConsultationSection from "@/components/consultation/ConsultationSection";
 
-export default function AgentsPage() {
+export default function TestimonialsPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#050605] text-white">
       <Navbar />
@@ -68,7 +68,7 @@ export default function AgentsPage() {
             <span className="h-px w-10 bg-[#d6b56a]" />
 
             <span className="text-[9px] uppercase tracking-[0.35em] text-[#d6b56a]">
-              Property Advisors
+              Client Stories
             </span>
           </div>
 
@@ -83,11 +83,11 @@ export default function AgentsPage() {
               text-white
             "
           >
-            Experts behind
+            Experiences that
             <br />
 
             <span className="text-[#d6b56a]">
-              every address.
+              speak for us.
             </span>
           </h1>
 
@@ -104,25 +104,29 @@ export default function AgentsPage() {
             "
           >
             <p className="max-w-xl text-[15px] leading-8 text-white/45">
-              Connect with experienced property advisors who understand
-              premium residences, locations and the details behind a confident
-              real-estate decision.
+              Discover how homeowners and investors describe their journey
+              with NestVille — from the first conversation to finding the
+              right address.
             </p>
 
             <div className="flex gap-10">
               <div>
-                <p className="text-3xl font-light text-white">15+</p>
+                <p className="text-3xl font-light text-white">
+                  98%
+                </p>
 
                 <p className="mt-2 text-[8px] uppercase tracking-[0.25em] text-white/30">
-                  Advisors
+                  Satisfaction
                 </p>
               </div>
 
               <div>
-                <p className="text-3xl font-light text-white">500+</p>
+                <p className="text-3xl font-light text-white">
+                  4.9
+                </p>
 
                 <p className="mt-2 text-[8px] uppercase tracking-[0.25em] text-white/30">
-                  Clients
+                  Average Rating
                 </p>
               </div>
             </div>
@@ -130,9 +134,9 @@ export default function AgentsPage() {
         </div>
       </section>
 
-      {/* AGENTS */}
-      <section id="agents">
-        <AgentsSection />
+      {/* TESTIMONIALS */}
+      <section id="testimonials">
+        <Testimonials />
       </section>
 
       {/* CONSULTATION */}

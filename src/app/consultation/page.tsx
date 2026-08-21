@@ -1,10 +1,10 @@
 import Navbar from "@/components/navbar/Navbar";
 import Footer from "@/components/footer/Footer";
 
-import AgentsSection from "@/components/agents/AgentsSection";
 import ConsultationSection from "@/components/consultation/ConsultationSection";
+import AgentsSection from "@/components/agents/AgentsSection";
 
-export default function AgentsPage() {
+export default function ConsultationPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#050605] text-white">
       <Navbar />
@@ -14,7 +14,7 @@ export default function AgentsPage() {
         className="
           relative
           flex
-          min-h-[68vh]
+          min-h-[65vh]
           items-end
           overflow-hidden
           px-6
@@ -24,6 +24,7 @@ export default function AgentsPage() {
           lg:px-12
         "
       >
+        {/* GOLD GLOW */}
         <div
           className="
             pointer-events-none
@@ -38,6 +39,7 @@ export default function AgentsPage() {
           "
         />
 
+        {/* GREEN GLOW */}
         <div
           className="
             pointer-events-none
@@ -52,6 +54,7 @@ export default function AgentsPage() {
           "
         />
 
+        {/* GRID */}
         <div
           className="
             pointer-events-none
@@ -64,14 +67,23 @@ export default function AgentsPage() {
         />
 
         <div className="relative z-10 mx-auto w-full max-w-[1450px]">
+          {/* LABEL */}
           <div className="flex items-center gap-4">
             <span className="h-px w-10 bg-[#d6b56a]" />
 
-            <span className="text-[9px] uppercase tracking-[0.35em] text-[#d6b56a]">
-              Property Advisors
+            <span
+              className="
+                text-[9px]
+                uppercase
+                tracking-[0.35em]
+                text-[#d6b56a]
+              "
+            >
+              Private Consultation
             </span>
           </div>
 
+          {/* TITLE */}
           <h1
             className="
               mt-8
@@ -83,14 +95,12 @@ export default function AgentsPage() {
               text-white
             "
           >
-            Experts behind
+            Your next move,
             <br />
-
-            <span className="text-[#d6b56a]">
-              every address.
-            </span>
+            <span className="text-[#d6b56a]">thoughtfully guided.</span>
           </h1>
 
+          {/* INFO */}
           <div
             className="
               mt-10
@@ -103,26 +113,49 @@ export default function AgentsPage() {
               lg:items-end
             "
           >
-            <p className="max-w-xl text-[15px] leading-8 text-white/45">
-              Connect with experienced property advisors who understand
-              premium residences, locations and the details behind a confident
-              real-estate decision.
+            <p
+              className="
+                max-w-xl
+                text-[15px]
+                leading-8
+                text-white/45
+              "
+            >
+              Tell us what you are looking for. Our advisors will help you
+              explore residences, locations and opportunities that align with
+              your requirements.
             </p>
 
             <div className="flex gap-10">
               <div>
-                <p className="text-3xl font-light text-white">15+</p>
+                <p className="text-3xl font-light text-white">1:1</p>
 
-                <p className="mt-2 text-[8px] uppercase tracking-[0.25em] text-white/30">
-                  Advisors
+                <p
+                  className="
+                    mt-2
+                    text-[8px]
+                    uppercase
+                    tracking-[0.25em]
+                    text-white/30
+                  "
+                >
+                  Consultation
                 </p>
               </div>
 
               <div>
-                <p className="text-3xl font-light text-white">500+</p>
+                <p className="text-3xl font-light text-white">24h</p>
 
-                <p className="mt-2 text-[8px] uppercase tracking-[0.25em] text-white/30">
-                  Clients
+                <p
+                  className="
+                    mt-2
+                    text-[8px]
+                    uppercase
+                    tracking-[0.25em]
+                    text-white/30
+                  "
+                >
+                  Response
                 </p>
               </div>
             </div>
@@ -130,13 +163,15 @@ export default function AgentsPage() {
         </div>
       </section>
 
-      {/* AGENTS */}
+      {/* CONSULTATION FORM */}
+      <section id="consultation">
+        <ConsultationSection />
+      </section>
+
+      {/* ADVISORS */}
       <section id="agents">
         <AgentsSection />
       </section>
-
-      {/* CONSULTATION */}
-      <ConsultationSection />
 
       {/* FOOTER */}
       <Footer />

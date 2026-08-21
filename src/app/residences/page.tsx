@@ -1,10 +1,10 @@
 import Navbar from "@/components/navbar/Navbar";
 import Footer from "@/components/footer/Footer";
 
-import AgentsSection from "@/components/agents/AgentsSection";
+import ResidencesSection from "@/components/residences/ResidencesSection";
 import ConsultationSection from "@/components/consultation/ConsultationSection";
 
-export default function AgentsPage() {
+export default function ResidencesPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#050605] text-white">
       <Navbar />
@@ -68,7 +68,7 @@ export default function AgentsPage() {
             <span className="h-px w-10 bg-[#d6b56a]" />
 
             <span className="text-[9px] uppercase tracking-[0.35em] text-[#d6b56a]">
-              Property Advisors
+              Signature Collection
             </span>
           </div>
 
@@ -83,56 +83,33 @@ export default function AgentsPage() {
               text-white
             "
           >
-            Experts behind
+            Extraordinary
             <br />
 
             <span className="text-[#d6b56a]">
-              every address.
+              residences.
             </span>
           </h1>
 
-          <div
+          <p
             className="
-              mt-10
-              grid
-              gap-8
-              border-t
-              border-white/10
-              pt-8
-              lg:grid-cols-[1fr_auto]
-              lg:items-end
+              mt-8
+              max-w-xl
+              text-[14px]
+              leading-8
+              text-white/45
+              sm:text-[15px]
             "
           >
-            <p className="max-w-xl text-[15px] leading-8 text-white/45">
-              Connect with experienced property advisors who understand
-              premium residences, locations and the details behind a confident
-              real-estate decision.
-            </p>
-
-            <div className="flex gap-10">
-              <div>
-                <p className="text-3xl font-light text-white">15+</p>
-
-                <p className="mt-2 text-[8px] uppercase tracking-[0.25em] text-white/30">
-                  Advisors
-                </p>
-              </div>
-
-              <div>
-                <p className="text-3xl font-light text-white">500+</p>
-
-                <p className="mt-2 text-[8px] uppercase tracking-[0.25em] text-white/30">
-                  Clients
-                </p>
-              </div>
-            </div>
-          </div>
+            Explore a curated portfolio of distinctive homes designed around
+            privacy, architecture and exceptional everyday living.
+          </p>
         </div>
       </section>
 
-      {/* AGENTS */}
-      <section id="agents">
-        <AgentsSection />
+      {/* RESIDENCE COLLECTION */}
+      <section id="residences">
+        <ResidencesSection />
       </section>
 
       {/* CONSULTATION */}
