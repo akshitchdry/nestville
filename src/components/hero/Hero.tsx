@@ -18,30 +18,23 @@ export default function Hero() {
         overflow-hidden
         bg-[#060806]
 
-        min-h-[980px]
-
-        sm:min-h-[960px]
-
-        md:min-h-[920px]
-
+        min-h-[1120px]
+        sm:min-h-[1040px]
+        md:min-h-[930px]
         lg:min-h-[760px]
       "
     >
-      {/* VIDEO */}
-
       <HeroVideo />
 
-      {/* DARK LEFT OVERLAY */}
-
+      {/* DARK OVERLAY */}
       <div
         className="
           absolute
           inset-0
           z-[2]
-
           bg-gradient-to-b
-          from-[#030503]/75
-          via-[#030503]/45
+          from-[#030503]/80
+          via-[#030503]/50
           to-[#060806]
 
           lg:bg-gradient-to-r
@@ -52,7 +45,6 @@ export default function Hero() {
       />
 
       {/* BOTTOM FADE */}
-
       <div
         className="
           absolute
@@ -65,14 +57,12 @@ export default function Hero() {
         "
       />
 
-      {/* PARALLAX */}
-
+      {/* DESKTOP PARALLAX */}
       <div className="hidden lg:block">
         <HeroParallax />
       </div>
 
-      {/* MAIN HERO CONTENT */}
-
+      {/* MAIN CONTENT — SAME POSITION */}
       <div
         className="
           relative
@@ -81,21 +71,20 @@ export default function Hero() {
           flex
           w-full
           max-w-[1600px]
-          flex-col
-          justify-start
+          items-start
 
           px-5
-          pb-[390px]
-          pt-[120px]
+          pb-[560px]
+          pt-[118px]
 
           sm:px-8
-          sm:pb-[360px]
-          sm:pt-[135px]
+          sm:pb-[500px]
+          sm:pt-[130px]
 
-          md:pb-[330px]
+          md:pb-[390px]
 
           lg:min-h-[760px]
-          lg:justify-center
+          lg:items-center
           lg:px-12
           lg:pb-[190px]
           lg:pt-[120px]
@@ -103,45 +92,29 @@ export default function Hero() {
           xl:px-16
         "
       >
-        <div
-          className="
-            w-full
-            max-w-[760px]
-
-            lg:max-w-none
-          "
-        >
+        <div className="w-full max-w-[760px]">
           <HeroContent />
         </div>
       </div>
 
       {/* FLOATING PROPERTY CARD */}
-
-      <div
-        className="
-          hidden
-
-          md:block
-
-          lg:block
-        "
-      >
+      <div className="hidden md:block">
         <FloatingPropertyCard />
       </div>
 
-      {/* HERO STATS */}
-
+      {/* STATS — SAME BOTTOM AREA */}
       <div
         className="
           absolute
           inset-x-0
-          bottom-[190px]
+          bottom-[390px]
           z-30
-
           px-5
 
-          sm:bottom-[185px]
+          sm:bottom-[340px]
           sm:px-8
+
+          md:bottom-[245px]
 
           lg:bottom-auto
           lg:px-0
@@ -152,37 +125,35 @@ export default function Hero() {
 
       {/* SEARCH */}
 
-      <div
-        className="
-          absolute
-          inset-x-0
-          bottom-[62px]
-          z-40
+<div
+  className="
+    absolute
+    inset-x-0
+    bottom-[70px]
+    z-40
+    px-5
 
-          px-5
+    sm:bottom-[75px]
+    sm:px-8
 
-          sm:bottom-[64px]
-          sm:px-8
+    md:bottom-[80px]
 
-          lg:bottom-8
-          lg:px-0
-        "
-      >
-        <HeroSearch />
-      </div>
+    lg:bottom-[55px]
+    lg:px-12
+
+    xl:bottom-[65px]
+    xl:px-16
+
+    2xl:bottom-[75px]
+  "
+>
+  <HeroSearch />
+</div>
 
       {/* SCROLL INDICATOR */}
-
-      <div
-        className="
-          hidden
-          lg:block
-        "
-      >
+      <div className="hidden lg:block">
         <ScrollIndicator />
       </div>
-
-      {/* MOBILE BOTTOM SAFE FADE */}
 
       <div
         className="
@@ -191,11 +162,10 @@ export default function Hero() {
           inset-x-0
           bottom-0
           z-10
-          h-52
-
+          h-56
           bg-gradient-to-t
           from-[#060806]
-          via-[#060806]/80
+          via-[#060806]/70
           to-transparent
 
           lg:h-36

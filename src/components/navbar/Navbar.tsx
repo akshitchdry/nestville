@@ -1,11 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
-import {
-  Heart,
-  Menu,
-  Search,
-} from "lucide-react";
+import { Menu } from "lucide-react";
 
 import {
   motion,
@@ -20,6 +16,7 @@ import {
 
 import DesktopMenu from "./DesktopMenu";
 import MobileMenu from "./MobileMenu";
+import NavActions from "./NavActions";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -208,7 +205,7 @@ export default function Navbar() {
             </Link>
           </motion.div>
 
-          {/* DESKTOP MENU */}
+          {/* DESKTOP NAV */}
 
           <DesktopMenu />
 
@@ -227,51 +224,20 @@ export default function Navbar() {
               duration: 0.75,
               delay: 0.3,
             }}
-            className="flex items-center gap-2"
+            className="
+              flex
+              items-center
+              gap-2
+            "
           >
-            <NavIcon label="Search">
-              <Search
-                size={16}
-                strokeWidth={1.5}
-              />
-            </NavIcon>
+            <NavActions />
 
-            <Link
-              href="/favourites"
-              aria-label="Favourites"
-              className="
-                hidden
-                h-10
-                w-10
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-white/10
-                bg-white/[0.025]
-                text-white/65
-                transition-all
-                duration-300
-                hover:border-[#d3ad5b]/35
-                hover:bg-[#d3ad5b]/10
-                hover:text-[#e3c988]
-                sm:flex
-              "
-            >
-              <Heart
-                size={16}
-                strokeWidth={1.5}
-              />
-            </Link>
-
-            <MagneticContactButton />
+            {/* MOBILE MENU BUTTON */}
 
             <motion.button
               type="button"
               aria-label="Open menu"
-              onClick={() =>
-                setMenuOpen(true)
-              }
+              onClick={() => setMenuOpen(true)}
               whileHover={{
                 scale: 1.05,
               }}
@@ -302,11 +268,11 @@ export default function Navbar() {
           </motion.div>
         </div>
 
+        {/* BOTTOM LINE */}
+
         <motion.div
           animate={{
-            scaleX: isScrolled
-              ? 1
-              : 0,
+            scaleX: isScrolled ? 1 : 0,
           }}
           className="
             absolute
@@ -323,156 +289,12 @@ export default function Navbar() {
         />
       </motion.header>
 
+      {/* MOBILE MENU */}
+
       <MobileMenu
         isOpen={menuOpen}
-        onClose={() =>
-          setMenuOpen(false)
-        }
+        onClose={() => setMenuOpen(false)}
       />
     </>
-  );
-}
-
-interface NavIconProps {
-  label: string;
-  children: React.ReactNode;
-}
-
-function NavIcon({
-  label,
-  children,
-}: NavIconProps) {
-  return (
-    <motion.button
-      type="button"
-      aria-label={label}
-      whileHover={{
-        scale: 1.07,
-      }}
-      whileTap={{
-        scale: 0.93,
-      }}
-      className="
-        hidden
-        h-10
-        w-10
-        items-center
-        justify-center
-        rounded-full
-        border
-        border-white/10
-        bg-white/[0.025]
-        text-white/65
-        transition-colors
-        duration-300
-        hover:border-[#d3ad5b]/35
-        hover:bg-[#d3ad5b]/10
-        hover:text-[#e3c988]
-        sm:flex
-      "
-    >
-      {children}
-    </motion.button>
-  );
-}
-
-function MagneticContactButton() {
-  const [position, setPosition] =
-    useState({
-      x: 0,
-      y: 0,
-    });
-
-  function handleMouseMove(
-    event: React.MouseEvent<HTMLAnchorElement>,
-  ) {
-    const rect =
-      event.currentTarget.getBoundingClientRect();
-
-    const x =
-      event.clientX -
-      rect.left -
-      rect.width / 2;
-
-    const y =
-      event.clientY -
-      rect.top -
-      rect.height / 2;
-
-    setPosition({
-      x: x * 0.16,
-      y: y * 0.16,
-    });
-  }
-
-  function resetPosition() {
-    setPosition({
-      x: 0,
-      y: 0,
-    });
-  }
-
-  return (
-    <motion.div
-      animate={position}
-      transition={{
-        type: "spring",
-        stiffness: 220,
-        damping: 18,
-        mass: 0.4,
-      }}
-      onMouseMove={
-        handleMouseMove as unknown as React.MouseEventHandler<HTMLDivElement>
-      }
-      onMouseLeave={resetPosition}
-      className="hidden lg:block"
-    >
-      <Link
-        href="/contact"
-        className="
-          group
-          relative
-          inline-flex
-          overflow-hidden
-          rounded-full
-          border
-          border-[#c8a35b]/40
-          px-5
-          py-3
-          text-[10px]
-          font-semibold
-          uppercase
-          tracking-[0.16em]
-          text-[#e6cd94]
-        "
-      >
-        <span
-          className="
-            absolute
-            inset-0
-            -translate-x-[105%]
-            bg-gradient-to-r
-            from-[#987233]
-            via-[#dfbd70]
-            to-[#a47a36]
-            transition-transform
-            duration-500
-            group-hover:translate-x-0
-          "
-        />
-
-        <span
-          className="
-            relative
-            z-10
-            transition-colors
-            duration-500
-            group-hover:text-[#090b09]
-          "
-        >
-          Contact Us
-        </span>
-      </Link>
-    </motion.div>
   );
 }
