@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   BedDouble,
@@ -9,7 +10,6 @@ import {
   Search,
   WalletCards,
 } from "lucide-react";
-import { useState } from "react";
 
 const searchTabs = ["Buy", "Rent", "Projects"];
 
@@ -20,7 +20,7 @@ export default function HeroSearch() {
     <motion.div
       initial={{
         opacity: 0,
-        y: 50,
+        y: 40,
       }}
       animate={{
         opacity: 1,
@@ -32,28 +32,36 @@ export default function HeroSearch() {
         ease: [0.22, 1, 0.36, 1],
       }}
       className="
-  absolute
-  bottom-7
-  left-1/2
-  z-40
-  w-[calc(100%-32px)]
-  max-w-[1180px]
-  -translate-x-1/2
-  mb-13
-"
+        mx-auto
+        w-full
+        max-w-[1180px]
+      "
     >
       <div
         className="
           overflow-hidden
-          rounded-[24px]
+          rounded-[22px]
           border
           border-white/10
-          bg-[#080b09]/75
-          shadow-[0_30px_100px_rgba(0,0,0,0.5)]
+          bg-[#080b09]/90
+          shadow-[0_24px_80px_rgba(0,0,0,0.5)]
           backdrop-blur-2xl
+
+          sm:rounded-[24px]
         "
       >
-        <div className="flex border-b border-white/[0.08]">
+        {/* TABS */}
+
+        <div
+          className="
+            flex
+            overflow-x-auto
+            border-b
+            border-white/[0.08]
+            [scrollbar-width:none]
+            [&::-webkit-scrollbar]:hidden
+          "
+        >
           {searchTabs.map((tab) => (
             <button
               key={tab}
@@ -61,16 +69,23 @@ export default function HeroSearch() {
               onClick={() => setActiveTab(tab)}
               className="
                 relative
-                min-w-[100px]
-                px-6
-                py-4
-                text-[11px]
+                min-w-[88px]
+                flex-1
+                px-4
+                py-3.5
+                text-[9px]
                 font-medium
                 uppercase
-                tracking-[0.18em]
+                tracking-[0.16em]
                 text-white/45
                 transition-colors
                 hover:text-white
+
+                sm:min-w-[100px]
+                sm:px-6
+                sm:py-4
+                sm:text-[11px]
+                sm:tracking-[0.18em]
               "
             >
               <span
@@ -107,10 +122,13 @@ export default function HeroSearch() {
                   className="
                     absolute
                     bottom-0
-                    left-5
-                    right-5
+                    left-4
+                    right-4
                     h-px
                     bg-[#d5b464]
+
+                    sm:left-5
+                    sm:right-5
                   "
                 />
               )}
@@ -118,35 +136,41 @@ export default function HeroSearch() {
           ))}
         </div>
 
+        {/* SEARCH FIELDS */}
+
         <div
           className="
             grid
+            grid-cols-1
             gap-2
-            p-3
-            md:grid-cols-2
+            p-2.5
+
+            sm:grid-cols-2
+            sm:p-3
+
             lg:grid-cols-[1.2fr_1fr_1fr_0.8fr_auto]
           "
         >
           <SearchField
-            icon={<MapPin size={16} />}
+            icon={<MapPin size={15} />}
             label="Location"
             value="Enter location"
           />
 
           <SearchField
-            icon={<Building2 size={16} />}
+            icon={<Building2 size={15} />}
             label="Property type"
             value="Select type"
           />
 
           <SearchField
-            icon={<WalletCards size={16} />}
+            icon={<WalletCards size={15} />}
             label="Price range"
             value="$500K – $5M"
           />
 
           <SearchField
-            icon={<BedDouble size={16} />}
+            icon={<BedDouble size={15} />}
             label="Bedrooms"
             value="Any"
           />
@@ -154,7 +178,7 @@ export default function HeroSearch() {
           <motion.button
             type="button"
             whileHover={{
-              scale: 1.02,
+              scale: 1.015,
             }}
             whileTap={{
               scale: 0.97,
@@ -163,22 +187,30 @@ export default function HeroSearch() {
               group
               relative
               flex
-              min-h-[68px]
+              min-h-[56px]
               items-center
               justify-center
               gap-3
               overflow-hidden
-              rounded-[16px]
+              rounded-[15px]
               bg-gradient-to-r
               from-[#a47b36]
               via-[#dfbd71]
               to-[#a47b36]
-              px-7
-              text-[11px]
+              px-6
+              text-[9px]
               font-semibold
               uppercase
-              tracking-[0.14em]
+              tracking-[0.13em]
               text-[#090b09]
+
+              sm:min-h-[62px]
+              sm:text-[10px]
+
+              lg:min-h-[68px]
+              lg:px-7
+              lg:text-[11px]
+              lg:tracking-[0.14em]
             "
           >
             <span
@@ -201,7 +233,7 @@ export default function HeroSearch() {
             </span>
 
             <Search
-              size={17}
+              size={16}
               className="
                 relative
                 z-10
@@ -235,26 +267,31 @@ function SearchField({
       className="
         group
         flex
-        min-h-[68px]
+        min-h-[56px]
         items-center
         gap-3
-        rounded-[16px]
+        rounded-[15px]
         border
         border-white/[0.07]
         bg-white/[0.025]
-        px-4
+        px-3.5
         text-left
         transition-all
         duration-300
         hover:border-[#c8a35b]/25
         hover:bg-white/[0.045]
+
+        sm:min-h-[62px]
+        sm:px-4
+
+        lg:min-h-[68px]
       "
     >
       <span
         className="
           flex
-          h-9
-          w-9
+          h-8
+          w-8
           shrink-0
           items-center
           justify-center
@@ -262,6 +299,9 @@ function SearchField({
           border
           border-[#c8a35b]/20
           text-[#d6b66d]
+
+          sm:h-9
+          sm:w-9
         "
       >
         {icon}
@@ -271,10 +311,15 @@ function SearchField({
         <span
           className="
             block
-            text-[9px]
+            text-[7px]
             uppercase
-            tracking-[0.18em]
+            tracking-[0.15em]
             text-white/35
+
+            sm:text-[8px]
+
+            lg:text-[9px]
+            lg:tracking-[0.18em]
           "
         >
           {label}
@@ -285,8 +330,10 @@ function SearchField({
             mt-1
             block
             truncate
-            text-[12px]
+            text-[11px]
             text-white/75
+
+            sm:text-[12px]
           "
         >
           {value}
@@ -294,8 +341,9 @@ function SearchField({
       </span>
 
       <ChevronDown
-        size={14}
+        size={13}
         className="
+          shrink-0
           text-white/30
           transition-transform
           duration-300

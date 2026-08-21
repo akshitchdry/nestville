@@ -22,7 +22,7 @@ export default function HeroStats() {
     <motion.div
       initial={{
         opacity: 0,
-        y: 30,
+        y: 24,
       }}
       animate={{
         opacity: 1,
@@ -30,17 +30,38 @@ export default function HeroStats() {
       }}
       transition={{
         duration: 0.8,
-        delay: 1,
+        delay: 0.9,
       }}
       className="
-        absolute
-        bottom-[155px]
-        right-12
-        z-20
-        hidden
+        mx-auto
+        grid
+        w-full
+        max-w-[760px]
+        grid-cols-3
         items-center
-        gap-8
+        rounded-[22px]
+        border
+        border-white/10
+        bg-black/25
+        px-4
+        py-4
+        backdrop-blur-xl
+
+        sm:px-6
+
+        lg:mx-0
+        lg:max-w-[620px]
+
         2xl:flex
+        2xl:w-auto
+        2xl:max-w-none
+        2xl:gap-8
+        2xl:rounded-none
+        2xl:border-0
+        2xl:bg-transparent
+        2xl:px-0
+        2xl:py-0
+        2xl:backdrop-blur-none
       "
     >
       {stats.map((stat, index) => (
@@ -48,16 +69,28 @@ export default function HeroStats() {
           key={stat.label}
           className="
             relative
-            pr-8
-            last:pr-0
+            min-w-0
+            px-2
+            text-center
+
+            sm:px-4
+
+            2xl:pr-8
+            2xl:text-left
+            2xl:last:pr-0
           "
         >
           <p
             className="
               font-display
-              text-[28px]
+              truncate
+              text-[19px]
               leading-none
               text-[#ead49b]
+
+              sm:text-[23px]
+
+              2xl:text-[28px]
             "
           >
             {stat.value}
@@ -66,10 +99,17 @@ export default function HeroStats() {
           <p
             className="
               mt-2
-              text-[8px]
+              text-[6px]
               uppercase
-              tracking-[0.18em]
+              leading-4
+              tracking-[0.12em]
               text-white/35
+
+              sm:text-[7px]
+              sm:tracking-[0.15em]
+
+              2xl:text-[8px]
+              2xl:tracking-[0.18em]
             "
           >
             {stat.label}
