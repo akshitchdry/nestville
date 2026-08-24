@@ -1,7 +1,7 @@
 ﻿"use client";
 
-import { motion, useInView, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { motion, useInView } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 
 interface StatCounterProps {
   value: number;
@@ -24,25 +24,53 @@ export default function StatCounter({
 
   const isInView = useInView(ref, {
     once: true,
-    amount: 0.5,
+    amount: 0.25,
   });
 
-  const motionValue = useMotionValue(0);
-
-  const springValue = useSpring(motionValue, {
-    damping: 22,
-    stiffness: 55,
-  });
-
-  const rounded = useTransform(springValue, (latest) =>
-    Math.floor(latest)
-  );
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
-    if (isInView) {
-      motionValue.set(value);
-    }
-  }, [isInView, motionValue, value]);
+    if (!isInView) return;
+
+    let animationFrame: number;
+
+    const duration = 1800;
+    const startTime = performance.now();
+
+    const animateCounter = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+
+      const progress = Math.min(
+        elapsed / duration,
+        1
+      );
+
+      // Smooth ease-out animation
+      const easedProgress =
+        1 - Math.pow(1 - progress, 3);
+
+      const currentValue = Math.floor(
+        easedProgress * value
+      );
+
+      setCount(currentValue);
+
+      if (progress < 1) {
+        animationFrame =
+          requestAnimationFrame(animateCounter);
+      } else {
+        // Always finish on exact value
+        setCount(value);
+      }
+    };
+
+    animationFrame =
+      requestAnimationFrame(animateCounter);
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+    };
+  }, [isInView, value]);
 
   return (
     <motion.div
@@ -57,9 +85,10 @@ export default function StatCounter({
       }}
       viewport={{
         once: true,
+        amount: 0.2,
       }}
       transition={{
-        duration: .8,
+        duration: 0.8,
         delay,
       }}
       whileHover={{
@@ -76,6 +105,8 @@ export default function StatCounter({
         p-8
       "
     >
+      {/* GOLD GLOW */}
+
       <div
         className="
           absolute
@@ -92,12 +123,9 @@ export default function StatCounter({
         "
       />
 
-      <div
-        className="
-          relative
-          z-10
-        "
-      >
+      <div className="relative z-10">
+        {/* LABEL */}
+
         <p
           className="
             text-[11px]
@@ -109,22 +137,24 @@ export default function StatCounter({
           {label}
         </p>
 
-        <motion.h3
+        {/* COUNTER */}
+
+        <h3
           className="
             mt-6
-            text-6xl
+            text-5xl
             font-light
+            tabular-nums
             text-white
+            sm:text-6xl
           "
         >
           {prefix}
-
-          <motion.span>
-            {rounded}
-          </motion.span>
-
+          {count.toLocaleString()}
           {suffix}
-        </motion.h3>
+        </h3>
+
+        {/* DESCRIPTION */}
 
         <p
           className="
@@ -137,6 +167,8 @@ export default function StatCounter({
           {description}
         </p>
 
+        {/* GOLD LINE */}
+
         <motion.div
           initial={{
             scaleX: 0,
@@ -146,10 +178,11 @@ export default function StatCounter({
           }}
           viewport={{
             once: true,
+            amount: 0.2,
           }}
           transition={{
             duration: 1,
-            delay: .2,
+            delay: delay + 0.2,
           }}
           className="
             mt-8
@@ -161,6 +194,8 @@ export default function StatCounter({
             to-transparent
           "
         />
+
+        {/* STATUS */}
 
         <div
           className="
@@ -191,6 +226,8 @@ export default function StatCounter({
           </span>
         </div>
       </div>
+
+      {/* HOVER BORDER */}
 
       <div
         className="
