@@ -62,11 +62,13 @@ const imageVariants = {
     scale: 1.08,
     filter: "blur(10px)",
   },
+
   center: {
     opacity: 1,
     scale: 1,
     filter: "blur(0px)",
   },
+
   exit: {
     opacity: 0,
     scale: 0.97,
@@ -79,10 +81,11 @@ export default function JourneyScene({
 }: JourneySceneProps) {
   const safeStep = Math.min(
     Math.max(activeStep, 0),
-    journeyVisuals.length - 1,
+    journeyVisuals.length - 1
   );
 
-  const activeVisual = journeyVisuals[safeStep];
+  const activeVisual =
+    journeyVisuals[safeStep];
 
   return (
     <div
@@ -100,7 +103,7 @@ export default function JourneyScene({
         lg:rounded-[34px]
       "
     >
-      {/* Background grid */}
+      {/* BACKGROUND GRID */}
 
       <div
         className="
@@ -114,7 +117,7 @@ export default function JourneyScene({
         "
       />
 
-      {/* Background glows */}
+      {/* BACKGROUND GLOW */}
 
       <motion.div
         animate={{
@@ -158,7 +161,7 @@ export default function JourneyScene({
         "
       />
 
-      {/* Main responsive image frame */}
+      {/* IMAGE FRAME */}
 
       <div
         className="
@@ -194,21 +197,17 @@ export default function JourneyScene({
               src={activeVisual.image}
               alt={`${activeVisual.title} construction stage`}
               fill
-              priority={safeStep === 0}
-              sizes="
-                (max-width: 640px) 100vw,
-                (max-width: 1024px) 90vw,
-                55vw
-              "
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, 55vw"
               className="object-cover"
               style={{
-                objectPosition: activeVisual.position,
+                objectPosition:
+                  activeVisual.position,
               }}
             />
           </motion.div>
         </AnimatePresence>
 
-        {/* Cinematic overlays */}
+        {/* OVERLAYS */}
 
         <div
           className="
@@ -233,6 +232,8 @@ export default function JourneyScene({
             to-black/10
           "
         />
+
+        {/* LIGHT SWEEP */}
 
         <motion.div
           key={`light-${safeStep}`}
@@ -263,7 +264,7 @@ export default function JourneyScene({
           "
         />
 
-        {/* Top status row */}
+        {/* TOP STATUS */}
 
         <div
           className="
@@ -312,7 +313,10 @@ export default function JourneyScene({
                 text-[#e0c078]
               "
             >
-              Stage {String(safeStep + 1).padStart(2, "0")}
+              Stage{" "}
+              {String(
+                safeStep + 1
+              ).padStart(2, "0")}
             </p>
           </motion.div>
 
@@ -367,7 +371,8 @@ export default function JourneyScene({
             </span>
           </div>
         </div>
-                {/* Bottom Info Card */}
+
+        {/* BOTTOM INFO */}
 
         <motion.div
           key={`info-${safeStep}`}
@@ -400,7 +405,7 @@ export default function JourneyScene({
             lg:max-w-[520px]
           "
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <p
                 className="
@@ -431,6 +436,7 @@ export default function JourneyScene({
                 flex
                 h-16
                 w-16
+                shrink-0
                 items-center
                 justify-center
                 rounded-full
@@ -482,7 +488,7 @@ export default function JourneyScene({
           </div>
         </motion.div>
 
-        {/* Floating Numbers */}
+        {/* FLOATING COMPLETION */}
 
         <motion.div
           animate={{
@@ -494,8 +500,8 @@ export default function JourneyScene({
           }}
           className="
             absolute
-            right-8
             bottom-24
+            right-8
             hidden
             rounded-full
             border
@@ -532,7 +538,8 @@ export default function JourneyScene({
           </span>
         </motion.div>
       </div>
-            {/* Outer corner details */}
+
+      {/* CORNERS */}
 
       <div
         className="
@@ -564,7 +571,7 @@ export default function JourneyScene({
         "
       />
 
-      {/* Decorative floating dots */}
+      {/* FLOATING DOTS */}
 
       <motion.span
         animate={{
@@ -615,7 +622,7 @@ export default function JourneyScene({
         "
       />
 
-      {/* Bottom label */}
+      {/* LABEL */}
 
       <div
         className="
