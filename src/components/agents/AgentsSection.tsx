@@ -6,6 +6,7 @@ import AgentCard, { Agent } from "./AgentCard";
 const agents: Agent[] = [
   {
     id: 1,
+    slug: "akshit-choudhary",
     name: "Akshit choudhary",
     role: "Luxury Property Consultant",
     location: "Dubai Marina",
@@ -18,6 +19,7 @@ const agents: Agent[] = [
   },
   {
     id: 2,
+    slug: "anshul malik",
     name: "Anshul malik",
     role: "Senior Investment Advisor",
     location: "Palm Jumeirah",
@@ -30,6 +32,7 @@ const agents: Agent[] = [
   },
   {
     id: 3,
+    slug: "priyanshi sharma",
     name: "Priyanshi Sharma",
     role: "Team Head",
     location: "Noida Extension",
