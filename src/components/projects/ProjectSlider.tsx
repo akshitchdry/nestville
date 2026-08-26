@@ -5,44 +5,55 @@ import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 
 import ProjectCard from "./ProjectCard";
-import * as projectModule from "./projectData";
+import { featuredProjects } from "./projectData";
 
-type SliderProject = {
-  id: number;
-  title: string;
-  location: string;
-  image: string;
-  price: string;
-  type?: string;
-  status?: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  area?: string;
-  slug?: string;
-};
+/* =========================================
+   SLIDER DATA
+========================================= */
 
-const projects: SliderProject[] =
-  (
-    "projects" in projectModule
-      ? (projectModule as unknown as { projects: SliderProject[] }).projects
-      : "projectData" in projectModule
-        ? (projectModule as unknown as { projectData: SliderProject[] })
-            .projectData
-        : []
-  ) ?? [];
+const projects = featuredProjects.map((project) => {
+  const firstBedroomNumber = Number(project.bedrooms.match(/\d+/)?.[0] ?? 0);
+
+  return {
+    id: project.id,
+
+    title: project.name,
+
+    location: project.location,
+
+    image: project.image,
+
+    price: project.startingPrice,
+
+    type: "Signature Project",
+
+    status: project.status,
+
+    bedrooms: firstBedroomNumber,
+
+    slug: project.name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, ""),
+  };
+});
 
 export default function ProjectSlider() {
   const sliderRef = useRef<HTMLDivElement>(null);
+
   const [activeIndex, setActiveIndex] = useState(0);
+
+  /* =========================================
+     SCROLL TO CARD
+  ========================================= */
 
   function scrollToProject(index: number) {
     const slider = sliderRef.current;
 
     if (!slider) return;
 
-    const cards = slider.querySelectorAll<HTMLElement>(
-      "[data-project-card]",
-    );
+    const cards = slider.querySelectorAll<HTMLElement>("[data-project-card]");
 
     const card = cards[index];
 
@@ -56,42 +67,24 @@ export default function ProjectSlider() {
     setActiveIndex(index);
   }
 
-  function handlePrevious() {
-    if (projects.length === 0) return;
+  /* =========================================
+     PREVIOUS
+  ========================================= */
 
+  function handlePrevious() {
     const nextIndex = Math.max(0, activeIndex - 1);
 
     scrollToProject(nextIndex);
   }
 
-  function handleNext() {
-    if (projects.length === 0) return;
+  /* =========================================
+     NEXT
+  ========================================= */
 
-    const nextIndex = Math.min(
-      projects.length - 1,
-      activeIndex + 1,
-    );
+  function handleNext() {
+    const nextIndex = Math.min(projects.length - 1, activeIndex + 1);
 
     scrollToProject(nextIndex);
-  }
-
-  if (projects.length === 0) {
-    return (
-      <section
-        className="
-          relative
-          overflow-hidden
-          bg-[#050605]
-          py-24
-        "
-      >
-        <div className="mx-auto max-w-7xl px-6 text-center">
-          <p className="text-sm text-white/40">
-            No project data found.
-          </p>
-        </div>
-      </section>
-    );
   }
 
   return (
@@ -102,7 +95,9 @@ export default function ProjectSlider() {
         overflow-hidden
         bg-[#050605]
         py-24
+
         sm:py-28
+
         lg:py-36
       "
     >
@@ -145,17 +140,22 @@ export default function ProjectSlider() {
           mx-auto
           max-w-[1500px]
           px-6
+
           sm:px-8
+
           lg:px-12
         "
       >
-        {/* HEADER */}
+        {/* =====================================
+            HEADER
+        ===================================== */}
 
         <div
           className="
             flex
             flex-col
             gap-8
+
             lg:flex-row
             lg:items-end
             lg:justify-between
@@ -179,8 +179,20 @@ export default function ProjectSlider() {
               ease: [0.22, 1, 0.36, 1],
             }}
           >
-            <div className="flex items-center gap-4">
-              <span className="h-px w-10 bg-[#d6b56a]" />
+            <div
+              className="
+                flex
+                items-center
+                gap-4
+              "
+            >
+              <span
+                className="
+                  h-px
+                  w-10
+                  bg-[#d6b56a]
+                "
+              />
 
               <span
                 className="
@@ -206,8 +218,11 @@ export default function ProjectSlider() {
             >
               Landmark
               <br />
-
-              <span className="text-[#d6b56a]">
+              <span
+                className="
+                  text-[#d6b56a]
+                "
+              >
                 Developments.
               </span>
             </h2>
@@ -215,7 +230,13 @@ export default function ProjectSlider() {
 
           {/* ARROWS */}
 
-          <div className="flex items-center gap-3">
+          <div
+            className="
+              flex
+              items-center
+              gap-3
+            "
+          >
             <button
               type="button"
               onClick={handlePrevious}
@@ -234,9 +255,11 @@ export default function ProjectSlider() {
                 text-white
                 transition-all
                 duration-300
+
                 hover:border-[#d6b56a]
                 hover:bg-[#d6b56a]
                 hover:text-black
+
                 disabled:cursor-not-allowed
                 disabled:opacity-30
               "
@@ -262,9 +285,11 @@ export default function ProjectSlider() {
                 text-white
                 transition-all
                 duration-300
+
                 hover:border-[#d6b56a]
                 hover:bg-[#d6b56a]
                 hover:text-black
+
                 disabled:cursor-not-allowed
                 disabled:opacity-30
               "
@@ -274,7 +299,9 @@ export default function ProjectSlider() {
           </div>
         </div>
 
-        {/* SLIDER */}
+        {/* =====================================
+            SLIDER
+        ===================================== */}
 
         <div
           ref={sliderRef}
@@ -287,6 +314,7 @@ export default function ProjectSlider() {
             overflow-x-auto
             scroll-smooth
             pb-8
+
             [scrollbar-width:none]
             [&::-webkit-scrollbar]:hidden
           "
@@ -296,23 +324,26 @@ export default function ProjectSlider() {
               key={project.id}
               data-project-card
               className="
-                min-w-[88%]
-                snap-start
-                sm:min-w-[72%]
-                md:min-w-[60%]
-                lg:min-w-[46%]
-                xl:min-w-[32%]
-              "
+                  min-w-[88%]
+                  snap-start
+
+                  sm:min-w-[72%]
+
+                  md:min-w-[60%]
+
+                  lg:min-w-[46%]
+
+                  xl:min-w-[32%]
+                "
             >
-              <ProjectCard
-                project={project}
-                index={index}
-              />
+              <ProjectCard project={project} index={index} />
             </div>
           ))}
         </div>
 
-        {/* BOTTOM NAVIGATION */}
+        {/* =====================================
+            BOTTOM NAVIGATION
+        ===================================== */}
 
         <div
           className="
@@ -325,7 +356,13 @@ export default function ProjectSlider() {
         >
           {/* DOTS */}
 
-          <div className="flex items-center gap-2">
+          <div
+            className="
+              flex
+              items-center
+              gap-2
+            "
+          >
             {projects.map((project, index) => {
               const active = activeIndex === index;
 
@@ -336,16 +373,17 @@ export default function ProjectSlider() {
                   onClick={() => scrollToProject(index)}
                   aria-label={`Go to project ${index + 1}`}
                   className={`
-                    h-[3px]
-                    rounded-full
-                    transition-all
-                    duration-500
-                    ${
-                      active
-                        ? "w-10 bg-[#d6b56a]"
-                        : "w-5 bg-white/15 hover:bg-white/35"
-                    }
-                  `}
+                      h-[3px]
+                      rounded-full
+                      transition-all
+                      duration-500
+
+                      ${
+                        active
+                          ? "w-10 bg-[#d6b56a]"
+                          : "w-5 bg-white/15 hover:bg-white/35"
+                      }
+                    `}
                 />
               );
             })}
@@ -362,7 +400,9 @@ export default function ProjectSlider() {
             "
           >
             {String(activeIndex + 1).padStart(2, "0")}
+
             {" / "}
+
             {String(projects.length).padStart(2, "0")}
           </div>
         </div>

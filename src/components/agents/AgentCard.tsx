@@ -1,11 +1,17 @@
 ﻿"use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowUpRight, Mail, Phone } from "lucide-react";
+import {
+  ArrowUpRight,
+  Mail,
+  Phone,
+} from "lucide-react";
 
 export interface Agent {
   id: number;
+  slug: string;
   name: string;
   role: string;
   location: string;
@@ -22,7 +28,10 @@ interface AgentCardProps {
   index?: number;
 }
 
-export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
+export default function AgentCard({
+  agent,
+  index = 0,
+}: AgentCardProps) {
   return (
     <motion.article
       initial={{
@@ -83,7 +92,6 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
           w-60
           rounded-full
           bg-[#c8a35b]/0
-          
           transition-all
           duration-700
           group-hover:bg-[#c8a35b]/15
@@ -152,34 +160,6 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
           "
         />
 
-        <motion.div
-          initial={{
-            x: "-140%",
-            opacity: 0,
-          }}
-          whileHover={{
-            x: "180%",
-            opacity: [0, 0.23, 0],
-          }}
-          transition={{
-            duration: 1.5,
-            ease: "easeInOut",
-          }}
-          className="
-            pointer-events-none
-            absolute
-            inset-y-0
-            z-10
-            w-[34%]
-            -skew-x-12
-            bg-gradient-to-r
-            from-transparent
-            via-white/15
-            to-transparent
-            
-          "
-        />
-
         <div
           className="
             absolute
@@ -204,7 +184,6 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
               bg-black/35
               px-3.5
               py-2.5
-              
             "
           >
             <span
@@ -241,7 +220,6 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
               uppercase
               tracking-[0.2em]
               text-[#e0c078]
-             
             "
           >
             {agent.experience}
@@ -264,7 +242,6 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
               border-white/10
               bg-black/45
               p-5
-            
             "
           >
             <div
@@ -442,14 +419,7 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
                   text-[#090b09]
                 "
               >
-                <Phone
-                  size={15}
-                  className="
-                    transition-transform
-                    duration-300
-                    group-hover:rotate-12
-                  "
-                />
+                <Phone size={15} />
                 Call Now
               </motion.a>
 
@@ -478,17 +448,9 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
                   uppercase
                   tracking-[0.16em]
                   text-white/80
-                 
                 "
               >
-                <Mail
-                  size={15}
-                  className="
-                    transition-transform
-                    duration-300
-                    group-hover:-translate-y-1
-                  "
-                />
+                <Mail size={15} />
                 Email
               </motion.a>
             </div>
@@ -537,11 +499,10 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
                 NestVille Signature Advisor
               </span>
 
-              <motion.div
-                whileHover={{
-                  x: 4,
-                }}
+              <Link
+                href={`/agents/${agent.slug}`}
                 className="
+                  group/profile
                   flex
                   items-center
                   gap-2
@@ -549,50 +510,25 @@ export default function AgentCard({ agent, index = 0 }: AgentCardProps) {
                   uppercase
                   tracking-[0.18em]
                   text-[#ddb86d]
+                  transition-colors
+                  hover:text-[#f0d99b]
                 "
               >
                 View Profile
-                <ArrowUpRight size={14} />
-              </motion.div>
+
+                <ArrowUpRight
+                  size={14}
+                  className="
+                    transition-transform
+                    duration-300
+                    group-hover/profile:translate-x-1
+                    group-hover/profile:-translate-y-1
+                  "
+                />
+              </Link>
             </div>
           </div>
         </div>
-      </div>
-
-      <div
-        className="
-          pointer-events-none
-          absolute
-          inset-0
-          rounded-[inherit]
-          opacity-0
-          transition-opacity
-          duration-700
-          group-hover:opacity-100
-        "
-      >
-        <div
-          className="
-            absolute
-            inset-0
-            rounded-[inherit]
-            ring-1
-            ring-[#d6b56a]/20
-          "
-        />
-
-        <div
-          className="
-            absolute
-            inset-x-10
-            bottom-0
-            h-px
-            bg-gradient-to-r
-            from-transparent
-            via-[#d6b56a]
-            to-transparent
-          "
-        />
       </div>
     </motion.article>
   );

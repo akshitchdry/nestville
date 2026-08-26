@@ -7,6 +7,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  ShieldCheck,
 } from "lucide-react";
 
 import FooterBackground from "./FooterBackground";
@@ -16,7 +17,6 @@ import Newsletter from "./Newsletter";
 
 export default function Footer() {
   function scrollToTop() {
-    // Browser ka native smooth scroll temporarily disable karta hai.
     const html = document.documentElement;
     const body = document.body;
 
@@ -26,7 +26,6 @@ export default function Footer() {
     html.style.scrollBehavior = "auto";
     body.style.scrollBehavior = "auto";
 
-    // Exact page top par le jaata hai.
     window.scrollTo({
       top: 0,
       left: 0,
@@ -36,10 +35,11 @@ export default function Footer() {
     html.scrollTop = 0;
     body.scrollTop = 0;
 
-    // Hero section available ho to uske exact start par position confirm karega.
     const hero =
       document.querySelector<HTMLElement>("#hero") ||
-      document.querySelector<HTMLElement>("main > section:first-of-type");
+      document.querySelector<HTMLElement>(
+        "main > section:first-of-type"
+      );
 
     if (hero) {
       hero.scrollIntoView({
@@ -48,26 +48,28 @@ export default function Footer() {
       });
     }
 
-    // URL me #footer ya doosra hash ho to remove karega.
     if (window.location.hash) {
       window.history.replaceState(
         null,
         "",
-        `${window.location.pathname}${window.location.search}`,
+        `${window.location.pathname}${window.location.search}`
       );
     }
 
-    // GSAP pin/transform ke baad bhi exact top ensure karna.
     requestAnimationFrame(() => {
       window.scrollTo(0, 0);
+
       html.scrollTop = 0;
       body.scrollTop = 0;
 
       requestAnimationFrame(() => {
         window.scrollTo(0, 0);
 
-        html.style.scrollBehavior = previousHtmlBehavior;
-        body.style.scrollBehavior = previousBodyBehavior;
+        html.style.scrollBehavior =
+          previousHtmlBehavior;
+
+        body.style.scrollBehavior =
+          previousBodyBehavior;
       });
     });
   }
@@ -80,7 +82,11 @@ export default function Footer() {
       <FooterBackground />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 pb-8 pt-24">
+        {/* NEWSLETTER */}
+
         <Newsletter />
+
+        {/* MAIN FOOTER */}
 
         <div
           className="
@@ -93,10 +99,14 @@ export default function Footer() {
             lg:grid-cols-[0.85fr_1.15fr]
           "
         >
+          {/* LEFT */}
+
           <div>
             <FooterLogo />
 
             <div className="mt-12 space-y-5">
+              {/* PHONE */}
+
               <a
                 href="tel:+971504567890"
                 className="
@@ -134,6 +144,8 @@ export default function Footer() {
 
                 +971 50 456 7890
               </a>
+
+              {/* EMAIL */}
 
               <a
                 href="mailto:hello@nestville.com"
@@ -173,6 +185,8 @@ export default function Footer() {
                 hello@nestville.com
               </a>
 
+              {/* ADDRESS */}
+
               <div
                 className="
                   flex
@@ -210,8 +224,12 @@ export default function Footer() {
             </div>
           </div>
 
+          {/* RIGHT LINKS */}
+
           <FooterLinks />
         </div>
+
+        {/* BOTTOM BAR */}
 
         <motion.div
           initial={{
@@ -241,6 +259,8 @@ export default function Footer() {
             md:justify-between
           "
         >
+          {/* COPYRIGHT + LINKS */}
+
           <div
             className="
               flex
@@ -254,10 +274,11 @@ export default function Footer() {
             "
           >
             <p>
-              © {new Date().getFullYear()} NestVille. All rights reserved.
+              © {new Date().getFullYear()} NestVille.
+              All rights reserved.
             </p>
 
-            <div className="flex items-center gap-5">
+            <div className="flex flex-wrap items-center gap-4">
               <Link
                 href="/privacy"
                 className="
@@ -290,8 +311,48 @@ export default function Footer() {
               >
                 Cookies
               </Link>
+
+              {/* ADMIN LOGIN */}
+
+              <Link
+                href="/admin/login"
+                className="
+                  group/admin
+                  inline-flex
+                  items-center
+                  gap-2
+                  rounded-full
+                  border
+                  border-white/10
+                  bg-white/[0.025]
+                  px-3.5
+                  py-2
+                  text-[8px]
+                  uppercase
+                  tracking-[0.18em]
+                  text-white/30
+                  transition-all
+                  duration-300
+                  hover:border-[#d6b56a]/35
+                  hover:bg-[#d6b56a]/10
+                  hover:text-[#d6b56a]
+                "
+              >
+                <ShieldCheck
+                  size={11}
+                  className="
+                    transition-transform
+                    duration-300
+                    group-hover/admin:scale-110
+                  "
+                />
+
+                Admin Login
+              </Link>
             </div>
           </div>
+
+          {/* BACK TO TOP */}
 
           <motion.button
             type="button"
@@ -350,6 +411,8 @@ export default function Footer() {
             </span>
           </motion.button>
         </motion.div>
+
+        {/* MOVING NESTVILLE TEXT */}
 
         <div
           className="
