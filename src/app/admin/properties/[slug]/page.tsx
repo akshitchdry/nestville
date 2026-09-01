@@ -51,7 +51,7 @@ export default async function PropertyDetailsPage({
     <main className="relative min-h-screen overflow-hidden bg-[#050505] text-white">
       <Navbar />
 
-      {/* PROPERTY GALLERY */}
+      {/* GALLERY */}
 
       <div className="pt-24">
         <PropertyGallery
@@ -59,7 +59,7 @@ export default async function PropertyDetailsPage({
         />
       </div>
 
-      {/* PROPERTY DETAILS */}
+      {/* DETAILS */}
 
       <section className="relative px-5 py-24 sm:px-6 lg:px-8">
         <div
@@ -73,31 +73,19 @@ export default async function PropertyDetailsPage({
             xl:gap-16
           "
         >
-          {/* LEFT CONTENT */}
+          {/* LEFT */}
 
           <div className="min-w-0 space-y-20">
             <PropertyOverview
               title={property.title}
-              description={
-                property.description ||
-                `Discover ${property.title}, an exceptional property located in ${property.location}. Designed for refined modern living with premium spaces and sophisticated architecture.`
-              }
-              bedrooms={property.bedrooms ?? 0}
-              bathrooms={property.bathrooms ?? 0}
-              area={property.area ?? "On Request"}
-              type={
-                property.category ||
-                "Luxury Property"
-              }
+              description={property.description}
+              bedrooms={property.bedrooms}
+              bathrooms={property.bathrooms}
+              area={property.area}
+              type={property.category}
               possession="Ready To Move"
-              parking={
-                (property.bedrooms ?? 0) >= 5
-                  ? "4 Cars"
-                  : "3 Cars"
-              }
-              facing={getFacing(
-                property.slug
-              )}
+              parking="3 Cars"
+              facing="Premium View"
             />
 
             <PropertyAmenities />
@@ -124,38 +112,9 @@ export default async function PropertyDetailsPage({
         </div>
       </section>
 
-      {/* SIMILAR PROPERTIES */}
-
-      <div className="mt-10">
-        <SimilarProperties />
-      </div>
+      <SimilarProperties />
 
       <Footer />
     </main>
   );
-}
-
-function getFacing(slug: string) {
-  switch (slug) {
-    case "the-aurelia-estate":
-      return "Waterfront";
-
-    case "horizon-villa":
-      return "City View";
-
-    case "oceanview-mansion":
-      return "Ocean Facing";
-
-    case "celestia-penthouse":
-      return "Skyline View";
-
-    case "the-serenity-house":
-      return "Garden Facing";
-
-    case "gaur-city":
-      return "Premium View";
-
-    default:
-      return "Premium View";
-  }
 }

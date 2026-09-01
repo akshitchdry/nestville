@@ -1,14 +1,8 @@
 "use client";
 
 import Link from "next/link";
-
-import {
-  FormEvent,
-  useState,
-} from "react";
-
-import { useRouter } from "next/navigation";
-
+import { FormEvent, useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Bath,
@@ -37,7 +31,7 @@ interface PropertyForm {
   featured: boolean;
 }
 
-const initialForm: PropertyForm = {
+const emptyForm: PropertyForm = {
   title: "",
   slug: "",
   location: "",
@@ -52,15 +46,17 @@ const initialForm: PropertyForm = {
   featured: false,
 };
 
-export default function AddPropertyPage() {
+export default function EditPropertyPage() {
+  const params = useParams<{ slug: string }>();
   const router = useRouter();
 
   const [form, setForm] =
-    useState<PropertyForm>(
-      initialForm
-    );
+    useState<PropertyForm>(emptyForm);
 
-  const [submitting, setSubmitting] =
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
     useState(false);
 
   const [success, setSuccess] =
@@ -68,6 +64,78 @@ export default function AddPropertyPage() {
 
   const [error, setError] =
     useState("");
+
+  const [originalId, setOriginalId] =
+    useState<number | null>(null);
+
+  useEffect(() => {
+    async function loadProperty() {
+      setLoading(true);
+      setError("");
+
+      const supabase = createClient();
+
+      const {
+        data,
+        error: fetchError,
+      } = await supabase
+        .from("properties")
+        .select("*")
+        .eq("slug", params.slug)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error(
+          "Property fetch error:",
+          fetchError
+        );
+
+        setError(
+          "Property load nahi ho paayi."
+        );
+
+        setLoading(false);
+        return;
+      }
+
+      if (!data) {
+        setError(
+          "Property nahi mili."
+        );
+
+        setLoading(false);
+        return;
+      }
+
+      setOriginalId(data.id);
+
+      setForm({
+        title: data.title ?? "",
+        slug: data.slug ?? "",
+        location: data.location ?? "",
+        price: data.price ?? "",
+        bedrooms: String(
+          data.bedrooms ?? ""
+        ),
+        bathrooms: String(
+          data.bathrooms ?? ""
+        ),
+        area: data.area ?? "",
+        category: data.category ?? "",
+        image: data.image ?? "",
+        description:
+          data.description ?? "",
+        status:
+          data.status ?? "published",
+        featured:
+          Boolean(data.featured),
+      });
+
+      setLoading(false);
+    }
+
+    loadProperty();
+  }, [params.slug]);
 
   function updateField(
     field: keyof PropertyForm,
@@ -112,9 +180,14 @@ export default function AddPropertyPage() {
   ) {
     event.preventDefault();
 
-    if (submitting) return;
+    if (
+      saving ||
+      originalId === null
+    ) {
+      return;
+    }
 
-    setSubmitting(true);
+    setSaving(true);
     setSuccess(false);
     setError("");
 
@@ -155,11 +228,10 @@ export default function AddPropertyPage() {
         createClient();
 
       const {
-        data,
-        error: insertError,
+        error: updateError,
       } = await supabase
         .from("properties")
-        .insert({
+        .update({
           title:
             form.title.trim(),
 
@@ -194,39 +266,34 @@ export default function AddPropertyPage() {
           featured:
             form.featured,
         })
-        .select()
-        .single();
+        .eq(
+          "id",
+          originalId
+        );
 
-      if (insertError) {
+      if (updateError) {
         console.error(
-          "Property insert error:",
-          insertError
+          "Property update error:",
+          updateError
         );
 
         if (
-          insertError.code ===
+          updateError.code ===
           "23505"
         ) {
           setError(
-            "Is slug ke saath property pehle se exist karti hai."
+            "Ye slug kisi aur property me already use ho raha hai."
           );
         } else {
           setError(
-            insertError.message
+            updateError.message
           );
         }
 
         return;
       }
 
-      console.log(
-        "Property created:",
-        data
-      );
-
       setSuccess(true);
-
-      setForm(initialForm);
 
       setTimeout(() => {
         router.push(
@@ -235,18 +302,50 @@ export default function AddPropertyPage() {
 
         router.refresh();
       }, 700);
-    } catch (submitError) {
+    } catch (updateError) {
       console.error(
-        "Property submit error:",
-        submitError
+        "Property update error:",
+        updateError
       );
 
       setError(
-        "Property save karte waqt error aa gaya."
+        "Property update karte waqt error aa gaya."
       );
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#050605] text-white">
+        <p className="text-sm text-white/40">
+          Loading property...
+        </p>
+      </main>
+    );
+  }
+
+  if (
+    error &&
+    originalId === null
+  ) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#050605] px-6 text-white">
+        <div className="text-center">
+          <p className="text-sm text-red-300">
+            {error}
+          </p>
+
+          <Link
+            href="/admin/properties"
+            className="mt-6 inline-flex rounded-full border border-white/10 px-5 py-3 text-[9px] uppercase tracking-[0.18em] text-white/50 hover:border-[#d6b56a]/30 hover:text-[#d6b56a]"
+          >
+            Back to Properties
+          </Link>
+        </div>
+      </main>
+    );
   }
 
   return (
@@ -282,33 +381,29 @@ export default function AddPropertyPage() {
               </p>
 
               <h1 className="mt-1 text-xl font-light sm:text-2xl">
-                Add Property
+                Edit Property
               </h1>
             </div>
           </div>
         </div>
       </header>
 
-      {/* FORM */}
-
       <section className="px-5 py-10 sm:px-8 lg:px-10">
         <form
           onSubmit={handleSubmit}
           className="mx-auto max-w-[1400px]"
         >
-          {/* HEADING */}
-
           <div className="mb-10">
             <div className="flex items-center gap-3">
               <span className="h-px w-8 bg-[#d6b56a]" />
 
               <span className="text-[9px] uppercase tracking-[0.3em] text-[#d6b56a]">
-                New Residence
+                Existing Residence
               </span>
             </div>
 
             <h2 className="mt-5 text-4xl font-light tracking-[-0.035em] sm:text-5xl">
-              Create a
+              Update
 
               <span className="text-[#d6b56a]">
                 {" "}
@@ -317,26 +412,22 @@ export default function AddPropertyPage() {
             </h2>
 
             <p className="mt-4 max-w-xl text-sm leading-7 text-white/40">
-              Property save hote hi
-              Supabase database me
-              permanently store ho jayegi.
+              Changes save hote hi
+              Supabase database me update
+              ho jayenge.
             </p>
           </div>
 
           <div className="grid gap-7 xl:grid-cols-[1fr_360px]">
-            {/* LEFT */}
-
             <div className="space-y-7">
-              {/* BASIC */}
-
               <FormSection
                 title="Basic Information"
-                description="Main information about the residence."
+                description="Main property information."
               >
                 <div className="grid gap-5 sm:grid-cols-2">
                   <InputField
                     label="Property Title"
-                    placeholder="The Aurelia Estate"
+                    placeholder="Property title"
                     value={form.title}
                     onChange={
                       handleTitleChange
@@ -346,7 +437,7 @@ export default function AddPropertyPage() {
 
                   <InputField
                     label="Slug"
-                    placeholder="the-aurelia-estate"
+                    placeholder="property-slug"
                     value={form.slug}
                     onChange={(value) =>
                       updateField(
@@ -359,7 +450,7 @@ export default function AddPropertyPage() {
 
                   <InputField
                     label="Location"
-                    placeholder="Palm Jumeirah, Dubai"
+                    placeholder="Dubai"
                     value={
                       form.location
                     }
@@ -370,9 +461,7 @@ export default function AddPropertyPage() {
                       )
                     }
                     icon={
-                      <MapPin
-                        size={15}
-                      />
+                      <MapPin size={15} />
                     }
                     required
                   />
@@ -392,7 +481,7 @@ export default function AddPropertyPage() {
 
                   <InputField
                     label="Category"
-                    placeholder="Waterfront Estate"
+                    placeholder="Luxury Villa"
                     value={
                       form.category
                     }
@@ -403,9 +492,7 @@ export default function AddPropertyPage() {
                       )
                     }
                     icon={
-                      <Building2
-                        size={15}
-                      />
+                      <Building2 size={15} />
                     }
                     required
                   />
@@ -424,8 +511,6 @@ export default function AddPropertyPage() {
                   />
                 </div>
               </FormSection>
-
-              {/* DETAILS */}
 
               <FormSection
                 title="Property Details"
@@ -446,9 +531,7 @@ export default function AddPropertyPage() {
                       )
                     }
                     icon={
-                      <BedDouble
-                        size={15}
-                      />
+                      <BedDouble size={15} />
                     }
                     required
                   />
@@ -467,16 +550,12 @@ export default function AddPropertyPage() {
                       )
                     }
                     icon={
-                      <Bath
-                        size={15}
-                      />
+                      <Bath size={15} />
                     }
                     required
                   />
                 </div>
               </FormSection>
-
-              {/* MEDIA */}
 
               <FormSection
                 title="Property Media"
@@ -493,70 +572,46 @@ export default function AddPropertyPage() {
                     )
                   }
                   icon={
-                    <ImageIcon
-                      size={15}
-                    />
+                    <ImageIcon size={15} />
                   }
                   required
                 />
-
-                <p className="mt-3 text-xs leading-6 text-white/30">
-                  Abhi existing public
-                  folder image ka path use
-                  karo. Supabase Storage
-                  upload baad me connect
-                  karenge.
-                </p>
               </FormSection>
-
-              {/* DESCRIPTION */}
 
               <FormSection
                 title="Description"
-                description="Short property introduction."
+                description="Property introduction."
               >
-                <label className="block">
-                  <span className="mb-3 block text-[9px] uppercase tracking-[0.2em] text-white/40">
-                    Property Description
-                  </span>
-
-                  <textarea
-                    value={
-                      form.description
-                    }
-                    required
-                    onChange={(event) =>
-                      updateField(
-                        "description",
-                        event.target
-                          .value
-                      )
-                    }
-                    rows={7}
-                    placeholder="Describe the residence..."
-                    className="
-                      w-full
-                      resize-none
-                      rounded-[20px]
-                      border
-                      border-white/10
-                      bg-black/20
-                      px-5
-                      py-4
-                      text-sm
-                      leading-7
-                      text-white
-                      outline-none
-                      transition-all
-                      placeholder:text-white/20
-                      focus:border-[#d6b56a]/40
-                      focus:bg-white/[0.025]
-                    "
-                  />
-                </label>
+                <textarea
+                  value={
+                    form.description
+                  }
+                  required
+                  rows={7}
+                  onChange={(event) =>
+                    updateField(
+                      "description",
+                      event.target.value
+                    )
+                  }
+                  className="
+                    w-full
+                    resize-none
+                    rounded-[20px]
+                    border
+                    border-white/10
+                    bg-black/20
+                    px-5
+                    py-4
+                    text-sm
+                    leading-7
+                    text-white
+                    outline-none
+                    placeholder:text-white/20
+                    focus:border-[#d6b56a]/40
+                  "
+                />
               </FormSection>
-
-              {/* PUBLISH SETTINGS */}
 
               <FormSection
                 title="Publishing"
@@ -575,8 +630,7 @@ export default function AddPropertyPage() {
                       onChange={(event) =>
                         updateField(
                           "status",
-                          event.target
-                            .value
+                          event.target.value
                         )
                       }
                       className="
@@ -612,11 +666,9 @@ export default function AddPropertyPage() {
                       onChange={(event) =>
                         updateField(
                           "featured",
-                          event.target
-                            .checked
+                          event.target.checked
                         )
                       }
-                      className="h-4 w-4"
                     />
 
                     <span>
@@ -634,24 +686,20 @@ export default function AddPropertyPage() {
               </FormSection>
             </div>
 
-            {/* RIGHT SIDEBAR */}
-
             <aside className="space-y-5 xl:sticky xl:top-28 xl:self-start">
-              {/* PUBLISH */}
-
               <div className="rounded-[26px] border border-white/10 bg-white/[0.025] p-6">
                 <p className="text-[9px] uppercase tracking-[0.24em] text-[#d6b56a]">
-                  Publish Property
+                  Save Changes
                 </p>
 
                 <p className="mt-4 text-sm leading-7 text-white/40">
-                  Review all information
-                  before saving.
+                  Review the changes before
+                  updating this residence.
                 </p>
 
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={saving}
                   className="
                     mt-6
                     flex
@@ -673,51 +721,35 @@ export default function AddPropertyPage() {
                     text-[#050605]
                     transition-transform
                     hover:scale-[1.02]
-                    disabled:cursor-wait
                     disabled:opacity-60
                   "
                 >
                   <Save size={15} />
 
-                  {submitting
-                    ? "Saving..."
-                    : "Add Property"}
+                  {saving
+                    ? "Updating..."
+                    : "Update Property"}
                 </button>
 
-                {/* ERROR */}
-
                 {error && (
-                  <div className="mt-5 rounded-[18px] border border-red-400/15 bg-red-400/[0.06] p-4">
-                    <p className="text-xs leading-6 text-red-300">
-                      {error}
+                  <div className="mt-5 rounded-[18px] border border-red-400/15 bg-red-400/[0.06] p-4 text-xs leading-6 text-red-300">
+                    {error}
+                  </div>
+                )}
+
+                {success && (
+                  <div className="mt-5 flex gap-3 rounded-[18px] border border-emerald-400/15 bg-emerald-400/[0.07] p-4">
+                    <CheckCircle2
+                      size={17}
+                      className="text-emerald-300"
+                    />
+
+                    <p className="text-xs text-emerald-200">
+                      Property updated.
                     </p>
                   </div>
                 )}
-
-                {/* SUCCESS */}
-
-                {success && (
-                  <div className="mt-5 flex items-start gap-3 rounded-[18px] border border-emerald-400/15 bg-emerald-400/[0.07] p-4">
-                    <CheckCircle2
-                      size={17}
-                      className="mt-0.5 shrink-0 text-emerald-300"
-                    />
-
-                    <div>
-                      <p className="text-xs text-emerald-200">
-                        Property saved.
-                      </p>
-
-                      <p className="mt-1 text-[11px] leading-5 text-white/35">
-                        Supabase database me
-                        property add ho gayi.
-                      </p>
-                    </div>
-                  </div>
-                )}
               </div>
-
-              {/* PREVIEW */}
 
               <div className="rounded-[26px] border border-white/10 bg-white/[0.025] p-6">
                 <p className="text-[9px] uppercase tracking-[0.24em] text-[#d6b56a]">
@@ -729,10 +761,7 @@ export default function AddPropertyPage() {
                     {form.image ? (
                       <img
                         src={form.image}
-                        alt={
-                          form.title ||
-                          "Property preview"
-                        }
+                        alt={form.title}
                         className="h-full w-full object-cover"
                       />
                     ) : (
@@ -745,42 +774,20 @@ export default function AddPropertyPage() {
 
                   <div className="p-5">
                     <p className="text-[8px] uppercase tracking-[0.2em] text-[#d6b56a]">
-                      {form.category ||
-                        "Property Category"}
+                      {form.category}
                     </p>
 
                     <h3 className="mt-3 text-xl font-light">
-                      {form.title ||
-                        "Property Title"}
+                      {form.title}
                     </h3>
 
                     <p className="mt-2 text-xs text-white/35">
-                      {form.location ||
-                        "Property location"}
+                      {form.location}
                     </p>
 
-                    <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4">
-                      <span className="text-xs text-white/35">
-                        Starting price
-                      </span>
-
-                      <span className="text-lg text-[#d6b56a]">
-                        {form.price ||
-                          "—"}
-                      </span>
-                    </div>
-
-                    <div className="mt-4 flex gap-2">
-                      <span className="rounded-full border border-white/10 px-3 py-1.5 text-[8px] uppercase tracking-[0.15em] text-white/40">
-                        {form.status}
-                      </span>
-
-                      {form.featured && (
-                        <span className="rounded-full border border-[#d6b56a]/20 bg-[#d6b56a]/10 px-3 py-1.5 text-[8px] uppercase tracking-[0.15em] text-[#d6b56a]">
-                          Featured
-                        </span>
-                      )}
-                    </div>
+                    <p className="mt-4 text-lg text-[#d6b56a]">
+                      {form.price}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -804,7 +811,7 @@ function FormSection({
   return (
     <section className="rounded-[28px] border border-white/10 bg-white/[0.025] p-6 sm:p-7">
       <div className="mb-7 border-b border-white/[0.07] pb-5">
-        <h3 className="text-xl font-light text-white">
+        <h3 className="text-xl font-light">
           {title}
         </h3>
 
@@ -829,9 +836,7 @@ function InputField({
 }: {
   label: string;
   value: string;
-  onChange: (
-    value: string
-  ) => void;
+  onChange: (value: string) => void;
   placeholder: string;
   type?: string;
   required?: boolean;
@@ -876,10 +881,8 @@ function InputField({
             text-sm
             text-white
             outline-none
-            transition-all
             placeholder:text-white/20
             focus:border-[#d6b56a]/40
-            focus:bg-white/[0.025]
 
             ${
               icon

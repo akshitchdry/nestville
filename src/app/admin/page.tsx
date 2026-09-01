@@ -10,14 +10,72 @@ import {
 } from "lucide-react";
 
 import AdminLogoutButton from "@/components/admin/AdminLogoutButton";
+import { createClient } from "@/lib/supabase/server";
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const supabase = await createClient();
+
+  // TOTAL PROPERTIES
+  const { count: totalProperties, error: propertiesCountError } =
+    await supabase
+      .from("properties")
+      .select("*", {
+        count: "exact",
+        head: true,
+      });
+
+  // PUBLISHED PROPERTIES
+  const { count: publishedProperties } = await supabase
+    .from("properties")
+    .select("*", {
+      count: "exact",
+      head: true,
+    })
+    .eq("status", "published");
+
+  // DRAFT PROPERTIES
+  const { count: draftProperties } = await supabase
+    .from("properties")
+    .select("*", {
+      count: "exact",
+      head: true,
+    })
+    .eq("status", "draft");
+
+  // RECENT PROPERTIES
+  const { data: recentProperties, error: recentPropertiesError } =
+    await supabase
+      .from("properties")
+      .select(
+        "id, title, location, price, status, created_at, slug"
+      )
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(5);
+
+  if (propertiesCountError) {
+    console.error(
+      "Properties count error:",
+      propertiesCountError.message
+    );
+  }
+
+  if (recentPropertiesError) {
+    console.error(
+      "Recent properties error:",
+      recentPropertiesError.message
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#050605] text-white">
       <div className="grid min-h-screen lg:grid-cols-[260px_1fr]">
+
         {/* SIDEBAR */}
         <aside className="hidden border-r border-white/10 bg-[#080a08] lg:block">
           <div className="sticky top-0 flex min-h-screen flex-col p-6">
+
             <Link
               href="/"
               className="flex items-center gap-3 border-b border-white/10 pb-6"
@@ -96,9 +154,11 @@ export default function AdminPage() {
 
         {/* MAIN */}
         <section>
+
           {/* TOPBAR */}
           <header className="border-b border-white/10 bg-[#060806]/80 px-5 py-5 backdrop-blur-xl sm:px-8 lg:px-10">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
               <div>
                 <p className="text-[9px] uppercase tracking-[0.28em] text-[#d6b56a]">
                   Admin Dashboard
@@ -110,6 +170,7 @@ export default function AdminPage() {
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
+
                 <Link
                   href="/"
                   className="
@@ -131,44 +192,51 @@ export default function AdminPage() {
                 </Link>
 
                 <AdminLogoutButton />
+
               </div>
             </div>
           </header>
 
           {/* CONTENT */}
           <div className="px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
+
             {/* STATS */}
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
               <StatCard
                 label="Total Properties"
-                value="128"
-                change="+12 this month"
+                value={String(totalProperties ?? 0)}
+                change={`${publishedProperties ?? 0} published`}
               />
 
               <StatCard
-                label="Active Enquiries"
-                value="42"
-                change="+8 today"
+                label="Published"
+                value={String(publishedProperties ?? 0)}
+                change="Live on website"
               />
 
               <StatCard
-                label="Listing Requests"
-                value="17"
-                change="6 awaiting review"
+                label="Draft Properties"
+                value={String(draftProperties ?? 0)}
+                change="Awaiting publication"
               />
 
               <StatCard
-                label="Registered Users"
-                value="684"
-                change="+31 this week"
+                label="Property Inventory"
+                value={String(totalProperties ?? 0)}
+                change="Total database records"
               />
+
             </div>
 
             {/* CONTENT GRID */}
             <div className="mt-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+
               {/* RECENT PROPERTIES */}
               <div className="rounded-[28px] border border-white/10 bg-white/[0.025] p-6">
+
                 <div className="flex items-center justify-between gap-4">
+
                   <div>
                     <p className="text-[9px] uppercase tracking-[0.22em] text-[#d6b56a]">
                       Properties
@@ -180,69 +248,99 @@ export default function AdminPage() {
                   </div>
 
                   <Link
-                    href="/admin/properties"
+                   href="/admin/properties"
                     className="text-[9px] uppercase tracking-[0.18em] text-white/40 transition-colors hover:text-[#d6b56a]"
                   >
                     View All
                   </Link>
+
                 </div>
 
                 <div className="mt-6 space-y-3">
-                  <PropertyRow
-                    title="The Aurelia Estate"
-                    location="Palm Jumeirah, Dubai"
-                    price="$6.2M"
-                    status="Published"
-                  />
 
-                  <PropertyRow
-                    title="The Horizon Villa"
-                    location="Beverly Hills, California"
-                    price="$4.8M"
-                    status="Published"
-                  />
+                  {recentProperties &&
+                  recentProperties.length > 0 ? (
+                    recentProperties.map((property) => (
+                      <Link
+                        key={property.id}
+                        href={`/properties/${property.slug}`}
+                        className="block"
+                      >
+                        <PropertyRow
+                          title={property.title}
+                          location={property.location}
+                          price={property.price}
+                          status={property.status}
+                        />
+                      </Link>
+                    ))
+                  ) : (
+                    <div className="rounded-2xl border border-white/10 bg-black/20 p-8 text-center">
+                      <Building2
+                        size={28}
+                        className="mx-auto text-white/15"
+                      />
 
-                  <PropertyRow
-                    title="Oceanview Mansion"
-                    location="Malibu, California"
-                    price="$9.5M"
-                    status="Draft"
-                  />
+                      <p className="mt-4 text-sm text-white/35">
+                        No properties found.
+                      </p>
+
+                      <Link
+                        href="/admin/properties/new"
+                        className="mt-4 inline-block text-[9px] uppercase tracking-[0.18em] text-[#d6b56a]"
+                      >
+                        Add Property
+                      </Link>
+                    </div>
+                  )}
+
                 </div>
               </div>
 
-              {/* RECENT ENQUIRIES */}
+              {/* QUICK ACTIONS */}
               <div className="rounded-[28px] border border-white/10 bg-white/[0.025] p-6">
-                <div>
-                  <p className="text-[9px] uppercase tracking-[0.22em] text-[#d6b56a]">
-                    Enquiries
-                  </p>
 
-                  <h2 className="mt-2 text-2xl font-light">
-                    Recent Leads
-                  </h2>
-                </div>
+                <p className="text-[9px] uppercase tracking-[0.22em] text-[#d6b56a]">
+                  Management
+                </p>
 
-                <div className="mt-6 space-y-4">
-                  <LeadRow
-                    name="Aarav Sharma"
-                    property="The Celestia"
-                    time="12 min ago"
+                <h2 className="mt-2 text-2xl font-light">
+                  Quick Actions
+                </h2>
+
+                <div className="mt-6 space-y-3">
+
+                  <QuickAction
+                    href="/admin/properties/new"
+                    icon={<Building2 size={17} />}
+                    title="Add Property"
+                    description="Create a new residence"
                   />
 
-                  <LeadRow
-                    name="Sophia Miller"
-                    property="Aurelia Bay"
-                    time="38 min ago"
+                  <QuickAction
+                    href="/admin/properties"
+                    icon={<Home size={17} />}
+                    title="Manage Properties"
+                    description="View and edit inventory"
                   />
 
-                  <LeadRow
-                    name="Rohan Mehta"
-                    property="Oceanview Mansion"
-                    time="1 hr ago"
+                  <QuickAction
+                    href="/admin/enquiries"
+                    icon={<Mail size={17} />}
+                    title="View Enquiries"
+                    description="Check website enquiries"
                   />
+
+                  <QuickAction
+                    href="/admin/users"
+                    icon={<UserRound size={17} />}
+                    title="Manage Users"
+                    description="View registered users"
+                  />
+
                 </div>
               </div>
+
             </div>
           </div>
         </section>
@@ -250,6 +348,8 @@ export default function AdminPage() {
     </main>
   );
 }
+
+/* SIDEBAR LINK */
 
 function SidebarLink({
   href,
@@ -282,10 +382,12 @@ function SidebarLink({
       `}
     >
       {icon}
-      {label}
+      {label} 
     </Link>
   );
 }
+
+/* STAT CARD */
 
 function StatCard({
   label,
@@ -298,6 +400,7 @@ function StatCard({
 }) {
   return (
     <div className="rounded-[24px] border border-white/10 bg-white/[0.025] p-6">
+
       <p className="text-[8px] uppercase tracking-[0.22em] text-white/30">
         {label}
       </p>
@@ -309,9 +412,12 @@ function StatCard({
       <p className="mt-3 text-xs text-[#d6b56a]">
         {change}
       </p>
+
     </div>
   );
 }
+
+/* PROPERTY ROW */
 
 function PropertyRow({
   title,
@@ -324,9 +430,13 @@ function PropertyRow({
   price: string;
   status: string;
 }) {
+  const published = status === "published";
+
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 p-4">
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-black/20 p-4 transition-all hover:border-[#d6b56a]/20 hover:bg-white/[0.03]">
+
       <div className="min-w-0">
+
         <p className="truncate text-sm text-white">
           {title}
         </p>
@@ -334,43 +444,74 @@ function PropertyRow({
         <p className="mt-1 truncate text-xs text-white/35">
           {location}
         </p>
+
       </div>
 
       <div className="shrink-0 text-right">
+
         <p className="text-sm text-[#d6b56a]">
           {price}
         </p>
 
-        <p className="mt-1 text-[8px] uppercase tracking-[0.18em] text-white/30">
+        <p
+          className={`mt-1 text-[8px] uppercase tracking-[0.18em] ${
+            published
+              ? "text-emerald-300"
+              : "text-white/30"
+          }`}
+        >
           {status}
         </p>
+
       </div>
+
     </div>
   );
 }
 
-function LeadRow({
-  name,
-  property,
-  time,
+/* QUICK ACTION */
+
+function QuickAction({
+  href,
+  icon,
+  title,
+  description,
 }: {
-  name: string;
-  property: string;
-  time: string;
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-      <p className="text-sm text-white">
-        {name}
-      </p>
+    <Link
+      href={href}
+      className="
+        flex
+        items-center
+        gap-4
+        rounded-2xl
+        border
+        border-white/10
+        bg-black/20
+        p-4
+        transition-all
+        hover:border-[#d6b56a]/25
+        hover:bg-white/[0.03]
+      "
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#d6b56a]/20 text-[#d6b56a]">
+        {icon}
+      </div>
 
-      <p className="mt-1 text-xs text-white/40">
-        Interested in {property}
-      </p>
+      <div>
+        <p className="text-sm text-white">
+          {title}
+        </p>
 
-      <p className="mt-3 text-[8px] uppercase tracking-[0.18em] text-[#d6b56a]">
-        {time}
-      </p>
-    </div>
+        <p className="mt-1 text-xs text-white/35">
+          {description}
+        </p>
+      </div>
+    </Link>
   );
 }
