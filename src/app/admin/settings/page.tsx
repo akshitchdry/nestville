@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft,
   Bell,
@@ -16,7 +16,7 @@ import {
 
 import { createClient } from "@/lib/supabase/client";
 
-interface Settings {
+type Settings = {
   adminName: string;
   adminEmail: string;
   siteName: string;
@@ -24,30 +24,46 @@ interface Settings {
   contactPhone: string;
   notifications: boolean;
   enquiryAlerts: boolean;
-}
+};
 
-const defaultSettings: Settings = {
-  adminName: "",
+const STORAGE_KEY = "nestville-admin-settings";
+
+const DEFAULT_SETTINGS: Settings = {
+  adminName: "NestVille Admin",
   adminEmail: "",
   siteName: "NestVille",
-  contactEmail: "info@nestville.com",
-  contactPhone: "+91 00000 00000",
+  contactEmail: "",
+  contactPhone: "",
   notifications: true,
   enquiryAlerts: true,
 };
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] =
-    useState<Settings>(defaultSettings);
+    useState<Settings>(DEFAULT_SETTINGS);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [changingPassword, setChangingPassword] =
+    useState(false);
+
+  const [passwordError, setPasswordError] =
+    useState("");
+
+  const [passwordSuccess, setPasswordSuccess] =
+    useState("");
+
   /*
-   * LOAD SETTINGS
-   */
+  =========================================
+  LOAD SETTINGS
+  =========================================
+  */
 
   useEffect(() => {
     let mounted = true;
@@ -57,99 +73,105 @@ export default function AdminSettingsPage() {
         setLoading(true);
         setError("");
 
-        const supabase = createClient();
+        const client = createClient();
 
-        /* CURRENT USER */
+        let storedSettings: Partial<Settings> = {};
 
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+        // Load local settings safely
+        try {
+          const stored =
+            window.localStorage.getItem(STORAGE_KEY);
 
-        if (userError) {
-          throw new Error(userError.message);
-        }
+          if (stored) {
+            const parsed: unknown = JSON.parse(stored);
 
-        if (!user) {
-          throw new Error("Admin session not found.");
-        }
-
-        /* PROFILE */
-
-        const { data: profile, error: profileError } =
-          await supabase
-            .from("profiles")
-            .select("full_name, email")
-            .eq("id", user.id)
-            .maybeSingle();
-
-        if (profileError) {
+            if (
+              parsed !== null &&
+              typeof parsed === "object" &&
+              !Array.isArray(parsed)
+            ) {
+              storedSettings =
+                parsed as Partial<Settings>;
+            }
+          }
+        } catch (storageError) {
           console.error(
-            "Profile load error:",
-            profileError.message
+            "LOCAL STORAGE ERROR:",
+            storageError
           );
         }
 
-        /* SITE SETTINGS */
+        // Get authenticated Supabase user
+        let email = "";
 
-        const {
-          data: siteSettings,
-          error: siteError,
-        } = await supabase
-          .from("site_settings")
-          .select(
-            "id, site_name, contact_email, contact_phone, notifications, enquiry_alerts"
-          )
-          .limit(1)
-          .maybeSingle();
+        try {
+          const { data, error: authError } =
+            await client.auth.getUser();
 
-        if (siteError) {
-          throw new Error(siteError.message);
+          if (authError) {
+            console.warn(
+              "SUPABASE USER ERROR:",
+              authError.message
+            );
+          }
+
+          email = data.user?.email ?? "";
+        } catch (authError) {
+          console.warn(
+            "AUTH REQUEST ERROR:",
+            authError
+          );
         }
 
         if (!mounted) return;
 
         setSettings({
           adminName:
-            profile?.full_name ??
-            user.user_metadata?.full_name ??
-            "",
+            typeof storedSettings.adminName === "string"
+              ? storedSettings.adminName
+              : DEFAULT_SETTINGS.adminName,
 
           adminEmail:
-            profile?.email ??
-            user.email ??
-            "",
+            email ||
+            (typeof storedSettings.adminEmail === "string"
+              ? storedSettings.adminEmail
+              : DEFAULT_SETTINGS.adminEmail),
 
           siteName:
-            siteSettings?.site_name ??
-            "NestVille",
+            typeof storedSettings.siteName === "string"
+              ? storedSettings.siteName
+              : DEFAULT_SETTINGS.siteName,
 
           contactEmail:
-            siteSettings?.contact_email ??
-            "info@nestville.com",
+            typeof storedSettings.contactEmail === "string"
+              ? storedSettings.contactEmail
+              : DEFAULT_SETTINGS.contactEmail,
 
           contactPhone:
-            siteSettings?.contact_phone ??
-            "+91 00000 00000",
+            typeof storedSettings.contactPhone === "string"
+              ? storedSettings.contactPhone
+              : DEFAULT_SETTINGS.contactPhone,
 
           notifications:
-            siteSettings?.notifications ??
-            true,
+            typeof storedSettings.notifications === "boolean"
+              ? storedSettings.notifications
+              : DEFAULT_SETTINGS.notifications,
 
           enquiryAlerts:
-            siteSettings?.enquiry_alerts ??
-            true,
+            typeof storedSettings.enquiryAlerts === "boolean"
+              ? storedSettings.enquiryAlerts
+              : DEFAULT_SETTINGS.enquiryAlerts,
         });
       } catch (err) {
-        console.error("Settings loading error:", err);
+        console.error("LOAD SETTINGS ERROR:", err);
 
-        if (!mounted) return;
-
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Unable to load settings."
-        );
+        if (mounted) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load settings."
+          );
+        }
       } finally {
         if (mounted) {
           setLoading(false);
@@ -165,24 +187,29 @@ export default function AdminSettingsPage() {
   }, []);
 
   /*
-   * UPDATE FIELD
-   */
+  =========================================
+  UPDATE SETTINGS
+  =========================================
+  */
 
-  function updateField<K extends keyof Settings>(
-    field: K,
-    value: Settings[K]
+  function updateSetting(
+    field: keyof Settings,
+    value: string | boolean
   ) {
     setSaved(false);
+    setError("");
 
-    setSettings((current) => ({
-      ...current,
+    setSettings((previous) => ({
+      ...previous,
       [field]: value,
     }));
   }
 
   /*
-   * SAVE SETTINGS
-   */
+  =========================================
+  SAVE SETTINGS
+  =========================================
+  */
 
   async function handleSave() {
     try {
@@ -190,113 +217,48 @@ export default function AdminSettingsPage() {
       setSaved(false);
       setError("");
 
-      const supabase = createClient();
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(settings)
+      );
 
-      /* CURRENT USER */
+      // Update Supabase profile metadata
+      try {
+        const client = createClient();
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+        const { data } =
+          await client.auth.getUser();
 
-      if (userError) {
-        throw new Error(userError.message);
-      }
-
-      if (!user) {
-        throw new Error("Admin session not found.");
-      }
-
-      /* PROFILE */
-
-      const { error: profileError } =
-        await supabase
-          .from("profiles")
-          .upsert(
-            {
-              id: user.id,
-              full_name: settings.adminName,
-              email: settings.adminEmail,
-            },
-            {
-              onConflict: "id",
-            }
-          );
-
-      if (profileError) {
-        throw new Error(
-          `Profile: ${profileError.message}`
-        );
-      }
-
-      /* CHECK SITE SETTINGS */
-
-      const {
-        data: existing,
-        error: existingError,
-      } = await supabase
-        .from("site_settings")
-        .select("id")
-        .limit(1)
-        .maybeSingle();
-
-      if (existingError) {
-        throw new Error(
-          `Site settings: ${existingError.message}`
-        );
-      }
-
-      /* UPDATE */
-
-      if (existing?.id) {
-        const { error: updateError } =
-          await supabase
-            .from("site_settings")
-            .update({
-              site_name: settings.siteName,
-              contact_email: settings.contactEmail,
-              contact_phone: settings.contactPhone,
-              notifications: settings.notifications,
-              enquiry_alerts: settings.enquiryAlerts,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", existing.id);
-
-        if (updateError) {
-          throw new Error(
-            `Site settings: ${updateError.message}`
-          );
-        }
-      }
-
-      /* INSERT */
-
-      else {
-        const { error: insertError } =
-          await supabase
-            .from("site_settings")
-            .insert({
-              site_name: settings.siteName,
-              contact_email: settings.contactEmail,
-              contact_phone: settings.contactPhone,
-              notifications: settings.notifications,
-              enquiry_alerts: settings.enquiryAlerts,
+        if (data.user) {
+          const { error: updateError } =
+            await client.auth.updateUser({
+              data: {
+                name: settings.adminName,
+                full_name: settings.adminName,
+              },
             });
 
-        if (insertError) {
-          throw new Error(
-            `Site settings: ${insertError.message}`
-          );
+          if (updateError) {
+            console.warn(
+              "PROFILE UPDATE WARNING:",
+              updateError.message
+            );
+          }
         }
+      } catch (authError) {
+        console.warn(
+          "PROFILE UPDATE WARNING:",
+          authError
+        );
       }
 
       setSaved(true);
 
-      setTimeout(() => {
+      window.setTimeout(() => {
         setSaved(false);
       }, 2500);
     } catch (err) {
-      console.error("Settings save error:", err);
+      console.error("SAVE SETTINGS ERROR:", err);
 
       setError(
         err instanceof Error
@@ -309,53 +271,77 @@ export default function AdminSettingsPage() {
   }
 
   /*
-   * PASSWORD RESET
-   */
+  =========================================
+  CHANGE PASSWORD
+  =========================================
+  */
 
   async function handlePasswordChange() {
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (!newPassword) {
+      setPasswordError(
+        "Please enter a new password."
+      );
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError(
+        "Password must contain at least 6 characters."
+      );
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError(
+        "Passwords do not match."
+      );
+      return;
+    }
+
     try {
-      setError("");
+      setChangingPassword(true);
 
-      if (!settings.adminEmail) {
-        setError("Admin email is not available.");
-        return;
+      const client = createClient();
+
+      const { error: updateError } =
+        await client.auth.updateUser({
+          password: newPassword,
+        });
+
+      if (updateError) {
+        throw updateError;
       }
 
-      const supabase = createClient();
+      setNewPassword("");
+      setConfirmPassword("");
 
-      const { error } =
-        await supabase.auth.resetPasswordForEmail(
-          settings.adminEmail,
-          {
-            redirectTo:
-              `${window.location.origin}/admin/settings`,
-          }
-        );
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      alert(
-        "Password reset link has been sent to your admin email."
+      setPasswordSuccess(
+        "Password changed successfully."
       );
     } catch (err) {
       console.error(
-        "Password reset error:",
+        "PASSWORD CHANGE ERROR:",
         err
       );
 
-      setError(
+      setPasswordError(
         err instanceof Error
           ? err.message
-          : "Unable to send password reset email."
+          : "Unable to change password."
       );
+    } finally {
+      setChangingPassword(false);
     }
   }
 
   /*
-   * LOADING
-   */
+  =========================================
+  LOADING
+  =========================================
+  */
 
   if (loading) {
     return (
@@ -363,8 +349,8 @@ export default function AdminSettingsPage() {
         <div className="text-center">
           <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-white/10 border-t-[#d6b56a]" />
 
-          <p className="mt-5 text-[9px] uppercase tracking-[0.3em] text-white/35">
-            Loading Settings
+          <p className="mt-5 text-sm text-white/40">
+            Loading settings...
           </p>
         </div>
       </main>
@@ -372,8 +358,10 @@ export default function AdminSettingsPage() {
   }
 
   /*
-   * PAGE
-   */
+  =========================================
+  PAGE
+  =========================================
+  */
 
   return (
     <main className="min-h-screen bg-[#050605] text-white">
@@ -402,9 +390,9 @@ export default function AdminSettingsPage() {
 
           <button
             type="button"
-            disabled={saving}
             onClick={handleSave}
-            className="flex items-center gap-2 rounded-full bg-[#d6b56a] px-5 py-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#050605] transition-all hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={saving}
+            className="flex items-center gap-2 rounded-full bg-[#d6b56a] px-5 py-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#050605] transition hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Save size={15} />
 
@@ -428,32 +416,26 @@ export default function AdminSettingsPage() {
           </div>
 
           <h2 className="mt-5 text-4xl font-light tracking-[-0.03em] sm:text-5xl">
-            Manage
+            Manage{" "}
             <span className="text-[#d6b56a]">
-              {" "}Settings.
+              Settings.
             </span>
           </h2>
 
           <p className="mt-4 max-w-xl text-sm leading-7 text-white/40">
             Manage your NestVille admin profile,
-            website information and notification
-            preferences.
+            website information, notifications and
+            account security.
           </p>
         </div>
 
         {/* ERROR */}
 
         {error && (
-          <div className="mb-7 rounded-[18px] border border-red-400/20 bg-red-400/[0.06] px-5 py-4 text-sm text-red-300">
-            {error}
-          </div>
-        )}
-
-        {/* SUCCESS */}
-
-        {saved && (
-          <div className="mb-7 rounded-[18px] border border-emerald-400/20 bg-emerald-400/[0.06] px-5 py-4 text-sm text-emerald-300">
-            ✓ Settings saved successfully.
+          <div className="mb-7 rounded-[20px] border border-red-400/20 bg-red-400/[0.05] p-5">
+            <p className="text-sm text-red-300">
+              {error}
+            </p>
           </div>
         )}
 
@@ -463,14 +445,17 @@ export default function AdminSettingsPage() {
           <SettingsSection
             icon={<UserRound size={18} />}
             title="Admin Profile"
-            description="Your administrator account information."
+            description="Administrator account information."
           >
             <div className="grid gap-5 sm:grid-cols-2">
               <InputField
                 label="Admin Name"
                 value={settings.adminName}
                 onChange={(value) =>
-                  updateField("adminName", value)
+                  updateSetting(
+                    "adminName",
+                    value
+                  )
                 }
               />
 
@@ -479,7 +464,10 @@ export default function AdminSettingsPage() {
                 type="email"
                 value={settings.adminEmail}
                 onChange={(value) =>
-                  updateField("adminEmail", value)
+                  updateSetting(
+                    "adminEmail",
+                    value
+                  )
                 }
                 icon={<Mail size={15} />}
               />
@@ -498,7 +486,10 @@ export default function AdminSettingsPage() {
                 label="Website Name"
                 value={settings.siteName}
                 onChange={(value) =>
-                  updateField("siteName", value)
+                  updateSetting(
+                    "siteName",
+                    value
+                  )
                 }
               />
 
@@ -507,7 +498,10 @@ export default function AdminSettingsPage() {
                 type="email"
                 value={settings.contactEmail}
                 onChange={(value) =>
-                  updateField("contactEmail", value)
+                  updateSetting(
+                    "contactEmail",
+                    value
+                  )
                 }
                 icon={<Mail size={15} />}
               />
@@ -516,7 +510,10 @@ export default function AdminSettingsPage() {
                 label="Contact Phone"
                 value={settings.contactPhone}
                 onChange={(value) =>
-                  updateField("contactPhone", value)
+                  updateSetting(
+                    "contactPhone",
+                    value
+                  )
                 }
                 icon={<Phone size={15} />}
               />
@@ -528,7 +525,7 @@ export default function AdminSettingsPage() {
           <SettingsSection
             icon={<Bell size={18} />}
             title="Notifications"
-            description="Control admin notifications and enquiry alerts."
+            description="Control admin notification preferences."
           >
             <div className="space-y-4">
               <ToggleRow
@@ -536,7 +533,7 @@ export default function AdminSettingsPage() {
                 description="Receive important admin notifications."
                 checked={settings.notifications}
                 onChange={(value) =>
-                  updateField(
+                  updateSetting(
                     "notifications",
                     value
                   )
@@ -548,7 +545,7 @@ export default function AdminSettingsPage() {
                 description="Get notified whenever a new property enquiry arrives."
                 checked={settings.enquiryAlerts}
                 onChange={(value) =>
-                  updateField(
+                  updateSetting(
                     "enquiryAlerts",
                     value
                   )
@@ -564,32 +561,62 @@ export default function AdminSettingsPage() {
             title="Security"
             description="Manage administrator account security."
           >
-            <div className="rounded-[20px] border border-white/10 bg-black/20 p-5">
-              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#d6b56a]/20 bg-[#d6b56a]/[0.06] text-[#d6b56a]">
-                    <Lock size={17} />
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-white/80">
-                      Password
-                    </p>
-
-                    <p className="mt-1 text-xs text-white/30">
-                      Send a password reset link to your admin email.
-                    </p>
-                  </div>
+            <div className="rounded-[22px] border border-white/10 bg-black/20 p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#d6b56a]/20 bg-[#d6b56a]/[0.06] text-[#d6b56a]">
+                  <Lock size={18} />
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handlePasswordChange}
-                  className="rounded-full border border-white/10 px-5 py-3 text-[9px] uppercase tracking-[0.16em] text-white/50 transition-all hover:border-[#d6b56a]/40 hover:text-[#d6b56a]"
-                >
-                  Change Password
-                </button>
+                <div>
+                  <h3 className="text-base text-white/80">
+                    Change Password
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-5 text-white/30">
+                    Change the password of the
+                    currently authenticated admin account.
+                  </p>
+                </div>
               </div>
+
+              <div className="mt-6 grid gap-5 sm:grid-cols-2">
+                <PasswordField
+                  label="New Password"
+                  value={newPassword}
+                  onChange={setNewPassword}
+                />
+
+                <PasswordField
+                  label="Confirm Password"
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                />
+              </div>
+
+              {passwordError && (
+                <p className="mt-4 text-xs text-red-300">
+                  {passwordError}
+                </p>
+              )}
+
+              {passwordSuccess && (
+                <p className="mt-4 text-xs text-emerald-300">
+                  ✓ {passwordSuccess}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={handlePasswordChange}
+                disabled={changingPassword}
+                className="mt-6 flex items-center gap-2 rounded-full border border-[#d6b56a]/30 px-6 py-3 text-[9px] font-medium uppercase tracking-[0.16em] text-[#d6b56a] transition-all hover:bg-[#d6b56a]/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Lock size={14} />
+
+                {changingPassword
+                  ? "Updating..."
+                  : "Change Password"}
+              </button>
             </div>
           </SettingsSection>
 
@@ -602,20 +629,31 @@ export default function AdminSettingsPage() {
               </p>
 
               <p className="mt-1 text-xs text-white/30">
-                Changes are stored in Supabase.
+                Profile and website settings are
+                saved in this browser.
               </p>
             </div>
 
-            <button
-              type="button"
-              disabled={saving}
-              onClick={handleSave}
-              className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#a57b36] via-[#dfbd71] to-[#a57b36] px-6 py-4 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#050605] transition-transform hover:scale-[1.02] disabled:opacity-50"
-            >
-              <Save size={15} />
+            <div className="flex items-center gap-4">
+              {saved && (
+                <span className="text-xs text-emerald-300">
+                  ✓ Changes saved
+                </span>
+              )}
 
-              {saving ? "Saving..." : "Save Settings"}
-            </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#a57b36] via-[#dfbd71] to-[#a57b36] px-6 py-4 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#050605] transition-transform hover:scale-[1.02] disabled:opacity-50"
+              >
+                <Save size={15} />
+
+                {saving
+                  ? "Saving..."
+                  : "Save Settings"}
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -697,11 +735,44 @@ function InputField({
           onChange={(event) =>
             onChange(event.target.value)
           }
-          className={`w-full rounded-[18px] border border-white/10 bg-black/20 py-4 pr-4 text-sm text-white outline-none transition-all focus:border-[#d6b56a]/40 ${
+          className={`w-full rounded-[18px] border border-white/10 bg-black/20 py-4 pr-4 text-sm text-white outline-none transition-all placeholder:text-white/20 focus:border-[#d6b56a]/40 focus:bg-white/[0.025] ${
             icon ? "pl-11" : "pl-4"
           }`}
         />
       </div>
+    </label>
+  );
+}
+
+/* =========================================
+   PASSWORD
+========================================= */
+
+function PasswordField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-3 block text-[9px] uppercase tracking-[0.2em] text-white/40">
+        {label}
+      </span>
+
+      <input
+        type="password"
+        value={value}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+        autoComplete="new-password"
+        placeholder="••••••••"
+        className="w-full rounded-[18px] border border-white/10 bg-black/20 px-4 py-4 text-sm text-white outline-none transition-all placeholder:text-white/15 focus:border-[#d6b56a]/40"
+      />
     </label>
   );
 }
@@ -736,6 +807,7 @@ function ToggleRow({
       <button
         type="button"
         aria-label={title}
+        aria-pressed={checked}
         onClick={() => onChange(!checked)}
         className={`relative h-7 w-12 shrink-0 rounded-full border transition-all ${
           checked

@@ -1,167 +1,144 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabase = await createClient();
 
-    // Check environment variables
-    if (!supabaseUrl) {
-      console.error("Missing NEXT_PUBLIC_SUPABASE_URL");
-
-      return NextResponse.json(
-        {
-          error: "Missing NEXT_PUBLIC_SUPABASE_URL",
-        },
-        { status: 500 }
-      );
-    }
-
-    if (!serviceRoleKey) {
-      console.error("Missing SUPABASE_SERVICE_ROLE_KEY");
-
-      return NextResponse.json(
-        {
-          error: "Missing SUPABASE_SERVICE_ROLE_KEY",
-        },
-        { status: 500 }
-      );
-    }
-
-    const supabaseAdmin = createClient(
-      supabaseUrl,
-      serviceRoleKey,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    );
-
-    // --------------------------------
-    // 1. GET AUTH USERS
-    // --------------------------------
-
+    // Get all registered users
     const {
       data: authData,
       error: authError,
-    } = await supabaseAdmin.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
-    });
+    } = await supabase.auth.admin.listUsers();
 
     if (authError) {
-      console.error("Supabase Auth Users Error:", authError);
+      console.error("Auth users error:", authError);
 
       return NextResponse.json(
-        {
-          error: authError.message,
-        },
-        { status: 500 }
+        { error: authError.message },
+        { status: 500 },
       );
     }
 
-    // --------------------------------
-    // 2. GET PROFILES
-    // --------------------------------
+    const authUsers = authData?.users ?? [];
 
-    const {
-      data: profiles,
-      error: profilesError,
-    } = await supabaseAdmin
+    if (authUsers.length === 0) {
+      return NextResponse.json({
+        users: [],
+      });
+    }
+
+    // Get profiles
+    const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, full_name, phone");
+      .select(
+        "id, full_name, email, phone, status, created_at",
+      );
 
     if (profilesError) {
-      console.error("Supabase Profiles Error:", profilesError);
+      console.error("Profiles error:", profilesError);
+    }
 
-      return NextResponse.json(
-        {
-          error: profilesError.message,
-        },
-        { status: 500 }
+    // Get favourites
+    const { data: favourites, error: favouritesError } = await supabase
+      .from("favourites")
+      .select("user_id");
+
+    if (favouritesError) {
+      console.error("Favourites error:", favouritesError);
+    }
+
+    // Get enquiries
+    const { data: enquiries, error: enquiriesError } = await supabase
+      .from("enquiries")
+      .select("user_id");
+
+    if (enquiriesError) {
+      console.error("Enquiries error:", enquiriesError);
+    }
+
+    // Create lookup maps
+    const profileMap = new Map(
+      (profiles ?? []).map((profile) => [
+        profile.id,
+        profile,
+      ]),
+    );
+
+    const favouriteCountMap = new Map<string, number>();
+
+    for (const favourite of favourites ?? []) {
+      if (!favourite.user_id) continue;
+
+      const current =
+        favouriteCountMap.get(favourite.user_id) ?? 0;
+
+      favouriteCountMap.set(
+        favourite.user_id,
+        current + 1,
       );
     }
 
-    // --------------------------------
-    // 3. CREATE PROFILE MAP
-    // --------------------------------
+    const enquiryCountMap = new Map<string, number>();
 
-    const profileMap = new Map<
-      string,
-      {
-        id: string;
-        full_name: string | null;
-        phone: string | null;
-      }
-    >();
+    for (const enquiry of enquiries ?? []) {
+      if (!enquiry.user_id) continue;
 
-    for (const profile of profiles ?? []) {
-      profileMap.set(profile.id, profile);
+      const current =
+        enquiryCountMap.get(enquiry.user_id) ?? 0;
+
+      enquiryCountMap.set(
+        enquiry.user_id,
+        current + 1,
+      );
     }
 
-    // --------------------------------
-    // 4. FORMAT USERS
-    // --------------------------------
-
-    const users = authData.users.map((user) => {
-      const profile = profileMap.get(user.id);
-
-      const name =
-        profile?.full_name ||
-        user.user_metadata?.full_name ||
-        user.user_metadata?.name ||
-        user.email?.split("@")[0] ||
-        "Unknown User";
-
-      const phone =
-        profile?.phone ||
-        user.phone ||
-        "";
+    // Final users
+    const users = authUsers.map((authUser) => {
+      const profile = profileMap.get(authUser.id);
 
       return {
-        id: user.id,
+        id: authUser.id,
 
-        name,
+        name:
+          profile?.full_name ||
+          authUser.user_metadata?.full_name ||
+          authUser.user_metadata?.name ||
+          "Unnamed User",
 
-        email: user.email ?? "",
+        email:
+          profile?.email ||
+          authUser.email ||
+          "",
 
-        phone,
+        phone:
+          profile?.phone ||
+          authUser.phone ||
+          "",
 
-        joined: user.created_at,
+        created_at:
+          profile?.created_at ||
+          authUser.created_at,
 
-        lastSignIn: user.last_sign_in_at ?? null,
+        status:
+          profile?.status ||
+          (authUser.email_confirmed_at
+            ? "active"
+            : "inactive"),
 
-        status: user.banned_until
-          ? "Inactive"
-          : "Active",
+        favourites_count:
+          favouriteCountMap.get(authUser.id) ?? 0,
 
-        emailConfirmed: Boolean(
-          user.email_confirmed_at
-        ),
-
-        favourites: 0,
-
-        enquiries: 0,
+        enquiries_count:
+          enquiryCountMap.get(authUser.id) ?? 0,
       };
     });
 
-    // --------------------------------
-    // 5. RESPONSE
-    // --------------------------------
-
-    return NextResponse.json(
-      {
-        users,
-        total: users.length,
-      },
-      { status: 200 }
-    );
-
+    return NextResponse.json({
+      users,
+    });
   } catch (error) {
-    console.error("ADMIN USERS API ERROR:", error);
+    console.error("Admin users API error:", error);
 
     return NextResponse.json(
       {
@@ -170,7 +147,9 @@ export async function GET() {
             ? error.message
             : "Failed to load users",
       },
-      { status: 500 }
+      {
+        status: 500,
+      },
     );
   }
 }
