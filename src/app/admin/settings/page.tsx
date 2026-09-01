@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -14,6 +14,8 @@ import {
   UserRound,
 } from "lucide-react";
 
+import { createClient } from "@/lib/supabase/client";
+
 interface Settings {
   adminName: string;
   adminEmail: string;
@@ -24,9 +26,9 @@ interface Settings {
   enquiryAlerts: boolean;
 }
 
-const initialSettings: Settings = {
-  adminName: "NestVille Admin",
-  adminEmail: "admin@nestville.com",
+const defaultSettings: Settings = {
+  adminName: "",
+  adminEmail: "",
   siteName: "NestVille",
   contactEmail: "info@nestville.com",
   contactPhone: "+91 00000 00000",
@@ -36,9 +38,135 @@ const initialSettings: Settings = {
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] =
-    useState<Settings>(initialSettings);
+    useState<Settings>(defaultSettings);
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+
+  /*
+   * LOAD SETTINGS
+   */
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function load() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const supabase = createClient();
+
+        /* CURRENT USER */
+
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+
+        if (userError) {
+          throw new Error(userError.message);
+        }
+
+        if (!user) {
+          throw new Error("Admin session not found.");
+        }
+
+        /* PROFILE */
+
+        const { data: profile, error: profileError } =
+          await supabase
+            .from("profiles")
+            .select("full_name, email")
+            .eq("id", user.id)
+            .maybeSingle();
+
+        if (profileError) {
+          console.error(
+            "Profile load error:",
+            profileError.message
+          );
+        }
+
+        /* SITE SETTINGS */
+
+        const {
+          data: siteSettings,
+          error: siteError,
+        } = await supabase
+          .from("site_settings")
+          .select(
+            "id, site_name, contact_email, contact_phone, notifications, enquiry_alerts"
+          )
+          .limit(1)
+          .maybeSingle();
+
+        if (siteError) {
+          throw new Error(siteError.message);
+        }
+
+        if (!mounted) return;
+
+        setSettings({
+          adminName:
+            profile?.full_name ??
+            user.user_metadata?.full_name ??
+            "",
+
+          adminEmail:
+            profile?.email ??
+            user.email ??
+            "",
+
+          siteName:
+            siteSettings?.site_name ??
+            "NestVille",
+
+          contactEmail:
+            siteSettings?.contact_email ??
+            "info@nestville.com",
+
+          contactPhone:
+            siteSettings?.contact_phone ??
+            "+91 00000 00000",
+
+          notifications:
+            siteSettings?.notifications ??
+            true,
+
+          enquiryAlerts:
+            siteSettings?.enquiry_alerts ??
+            true,
+        });
+      } catch (err) {
+        console.error("Settings loading error:", err);
+
+        if (!mounted) return;
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load settings."
+        );
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    load();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  /*
+   * UPDATE FIELD
+   */
 
   function updateField<K extends keyof Settings>(
     field: K,
@@ -52,34 +180,211 @@ export default function AdminSettingsPage() {
     }));
   }
 
-  function handleSave() {
-    localStorage.setItem(
-      "nestville-admin-settings",
-      JSON.stringify(settings)
-    );
+  /*
+   * SAVE SETTINGS
+   */
 
-    setSaved(true);
-
-    setTimeout(() => {
+  async function handleSave() {
+    try {
+      setSaving(true);
       setSaved(false);
-    }, 2500);
+      setError("");
+
+      const supabase = createClient();
+
+      /* CURRENT USER */
+
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        throw new Error(userError.message);
+      }
+
+      if (!user) {
+        throw new Error("Admin session not found.");
+      }
+
+      /* PROFILE */
+
+      const { error: profileError } =
+        await supabase
+          .from("profiles")
+          .upsert(
+            {
+              id: user.id,
+              full_name: settings.adminName,
+              email: settings.adminEmail,
+            },
+            {
+              onConflict: "id",
+            }
+          );
+
+      if (profileError) {
+        throw new Error(
+          `Profile: ${profileError.message}`
+        );
+      }
+
+      /* CHECK SITE SETTINGS */
+
+      const {
+        data: existing,
+        error: existingError,
+      } = await supabase
+        .from("site_settings")
+        .select("id")
+        .limit(1)
+        .maybeSingle();
+
+      if (existingError) {
+        throw new Error(
+          `Site settings: ${existingError.message}`
+        );
+      }
+
+      /* UPDATE */
+
+      if (existing?.id) {
+        const { error: updateError } =
+          await supabase
+            .from("site_settings")
+            .update({
+              site_name: settings.siteName,
+              contact_email: settings.contactEmail,
+              contact_phone: settings.contactPhone,
+              notifications: settings.notifications,
+              enquiry_alerts: settings.enquiryAlerts,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", existing.id);
+
+        if (updateError) {
+          throw new Error(
+            `Site settings: ${updateError.message}`
+          );
+        }
+      }
+
+      /* INSERT */
+
+      else {
+        const { error: insertError } =
+          await supabase
+            .from("site_settings")
+            .insert({
+              site_name: settings.siteName,
+              contact_email: settings.contactEmail,
+              contact_phone: settings.contactPhone,
+              notifications: settings.notifications,
+              enquiry_alerts: settings.enquiryAlerts,
+            });
+
+        if (insertError) {
+          throw new Error(
+            `Site settings: ${insertError.message}`
+          );
+        }
+      }
+
+      setSaved(true);
+
+      setTimeout(() => {
+        setSaved(false);
+      }, 2500);
+    } catch (err) {
+      console.error("Settings save error:", err);
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to save settings."
+      );
+    } finally {
+      setSaving(false);
+    }
   }
+
+  /*
+   * PASSWORD RESET
+   */
+
+  async function handlePasswordChange() {
+    try {
+      setError("");
+
+      if (!settings.adminEmail) {
+        setError("Admin email is not available.");
+        return;
+      }
+
+      const supabase = createClient();
+
+      const { error } =
+        await supabase.auth.resetPasswordForEmail(
+          settings.adminEmail,
+          {
+            redirectTo:
+              `${window.location.origin}/admin/settings`,
+          }
+        );
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      alert(
+        "Password reset link has been sent to your admin email."
+      );
+    } catch (err) {
+      console.error(
+        "Password reset error:",
+        err
+      );
+
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Unable to send password reset email."
+      );
+    }
+  }
+
+  /*
+   * LOADING
+   */
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#050605] text-white">
+        <div className="text-center">
+          <div className="mx-auto h-9 w-9 animate-spin rounded-full border-2 border-white/10 border-t-[#d6b56a]" />
+
+          <p className="mt-5 text-[9px] uppercase tracking-[0.3em] text-white/35">
+            Loading Settings
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  /*
+   * PAGE
+   */
 
   return (
     <main className="min-h-screen bg-[#050605] text-white">
       {/* TOP BAR */}
+
       <header className="sticky top-0 z-40 border-b border-white/10 bg-[#060806]/90 backdrop-blur-2xl">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-5 py-5 sm:px-8 lg:px-10">
           <div className="flex items-center gap-4">
             <Link
               href="/admin"
-              className="
-                flex h-11 w-11 items-center justify-center
-                rounded-full border border-white/10
-                text-white/50 transition-all
-                hover:border-[#d6b56a]/40
-                hover:text-[#d6b56a]
-              "
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-white/50 transition-all hover:border-[#d6b56a]/40 hover:text-[#d6b56a]"
             >
               <ArrowLeft size={17} />
             </Link>
@@ -97,29 +402,22 @@ export default function AdminSettingsPage() {
 
           <button
             type="button"
+            disabled={saving}
             onClick={handleSave}
-            className="
-              flex items-center gap-2 rounded-full
-              bg-[#d6b56a] px-5 py-3
-              text-[9px] font-semibold uppercase
-              tracking-[0.16em] text-[#050605]
-              transition-transform hover:scale-[1.03]
-            "
+            className="flex items-center gap-2 rounded-full bg-[#d6b56a] px-5 py-3 text-[9px] font-semibold uppercase tracking-[0.16em] text-[#050605] transition-all hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Save size={15} />
-            <span className="hidden sm:inline">
-              Save Changes
-            </span>
-            <span className="sm:hidden">
-              Save
-            </span>
+
+            {saving ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </header>
 
       {/* CONTENT */}
+
       <section className="mx-auto max-w-[1200px] px-5 py-10 sm:px-8 lg:px-10">
         {/* HEADING */}
+
         <div className="mb-10">
           <div className="flex items-center gap-3">
             <span className="h-px w-8 bg-[#d6b56a]" />
@@ -143,8 +441,25 @@ export default function AdminSettingsPage() {
           </p>
         </div>
 
+        {/* ERROR */}
+
+        {error && (
+          <div className="mb-7 rounded-[18px] border border-red-400/20 bg-red-400/[0.06] px-5 py-4 text-sm text-red-300">
+            {error}
+          </div>
+        )}
+
+        {/* SUCCESS */}
+
+        {saved && (
+          <div className="mb-7 rounded-[18px] border border-emerald-400/20 bg-emerald-400/[0.06] px-5 py-4 text-sm text-emerald-300">
+            ✓ Settings saved successfully.
+          </div>
+        )}
+
         <div className="space-y-7">
           {/* ADMIN PROFILE */}
+
           <SettingsSection
             icon={<UserRound size={18} />}
             title="Admin Profile"
@@ -172,6 +487,7 @@ export default function AdminSettingsPage() {
           </SettingsSection>
 
           {/* WEBSITE */}
+
           <SettingsSection
             icon={<Globe size={18} />}
             title="Website Information"
@@ -208,6 +524,7 @@ export default function AdminSettingsPage() {
           </SettingsSection>
 
           {/* NOTIFICATIONS */}
+
           <SettingsSection
             icon={<Bell size={18} />}
             title="Notifications"
@@ -219,7 +536,10 @@ export default function AdminSettingsPage() {
                 description="Receive important admin notifications."
                 checked={settings.notifications}
                 onChange={(value) =>
-                  updateField("notifications", value)
+                  updateField(
+                    "notifications",
+                    value
+                  )
                 }
               />
 
@@ -228,13 +548,17 @@ export default function AdminSettingsPage() {
                 description="Get notified whenever a new property enquiry arrives."
                 checked={settings.enquiryAlerts}
                 onChange={(value) =>
-                  updateField("enquiryAlerts", value)
+                  updateField(
+                    "enquiryAlerts",
+                    value
+                  )
                 }
               />
             </div>
           </SettingsSection>
 
           {/* SECURITY */}
+
           <SettingsSection
             icon={<ShieldCheck size={18} />}
             title="Security"
@@ -253,26 +577,15 @@ export default function AdminSettingsPage() {
                     </p>
 
                     <p className="mt-1 text-xs text-white/30">
-                      Change your administrator password.
+                      Send a password reset link to your admin email.
                     </p>
                   </div>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() =>
-                    alert(
-                      "Password change system next step me connect karenge."
-                    )
-                  }
-                  className="
-                    rounded-full border border-white/10
-                    px-5 py-3 text-[9px]
-                    uppercase tracking-[0.16em]
-                    text-white/50 transition-all
-                    hover:border-[#d6b56a]/40
-                    hover:text-[#d6b56a]
-                  "
+                  onClick={handlePasswordChange}
+                  className="rounded-full border border-white/10 px-5 py-3 text-[9px] uppercase tracking-[0.16em] text-white/50 transition-all hover:border-[#d6b56a]/40 hover:text-[#d6b56a]"
                 >
                   Change Password
                 </button>
@@ -281,6 +594,7 @@ export default function AdminSettingsPage() {
           </SettingsSection>
 
           {/* SAVE */}
+
           <div className="flex flex-col items-stretch justify-between gap-4 rounded-[26px] border border-white/10 bg-white/[0.025] p-6 sm:flex-row sm:items-center">
             <div>
               <p className="text-sm text-white/70">
@@ -288,39 +602,20 @@ export default function AdminSettingsPage() {
               </p>
 
               <p className="mt-1 text-xs text-white/30">
-                Settings will be stored for this admin portal.
+                Changes are stored in Supabase.
               </p>
             </div>
 
-            <div className="flex items-center gap-4">
-              {saved && (
-                <span className="text-xs text-emerald-300">
-                  ✓ Changes saved
-                </span>
-              )}
+            <button
+              type="button"
+              disabled={saving}
+              onClick={handleSave}
+              className="flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#a57b36] via-[#dfbd71] to-[#a57b36] px-6 py-4 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#050605] transition-transform hover:scale-[1.02] disabled:opacity-50"
+            >
+              <Save size={15} />
 
-              <button
-                type="button"
-                onClick={handleSave}
-                className="
-                  flex items-center justify-center gap-2
-                  rounded-full
-                  bg-gradient-to-r
-                  from-[#a57b36]
-                  via-[#dfbd71]
-                  to-[#a57b36]
-                  px-6 py-4
-                  text-[9px] font-semibold
-                  uppercase tracking-[0.18em]
-                  text-[#050605]
-                  transition-transform
-                  hover:scale-[1.02]
-                "
-              >
-                <Save size={15} />
-                Save Settings
-              </button>
-            </div>
+              {saving ? "Saving..." : "Save Settings"}
+            </button>
           </div>
         </div>
       </section>
@@ -328,7 +623,9 @@ export default function AdminSettingsPage() {
   );
 }
 
-/* ---------------- SETTINGS SECTION ---------------- */
+/* =========================================
+   SETTINGS SECTION
+========================================= */
 
 function SettingsSection({
   icon,
@@ -364,7 +661,9 @@ function SettingsSection({
   );
 }
 
-/* ---------------- INPUT ---------------- */
+/* =========================================
+   INPUT
+========================================= */
 
 function InputField({
   label,
@@ -398,25 +697,18 @@ function InputField({
           onChange={(event) =>
             onChange(event.target.value)
           }
-          className={`
-            w-full rounded-[18px]
-            border border-white/10
-            bg-black/20
-            py-4 pr-4
-            text-sm text-white
-            outline-none
-            transition-all
-            focus:border-[#d6b56a]/40
-            focus:bg-white/[0.025]
-            ${icon ? "pl-11" : "pl-4"}
-          `}
+          className={`w-full rounded-[18px] border border-white/10 bg-black/20 py-4 pr-4 text-sm text-white outline-none transition-all focus:border-[#d6b56a]/40 ${
+            icon ? "pl-11" : "pl-4"
+          }`}
         />
       </div>
     </label>
   );
 }
 
-/* ---------------- TOGGLE ---------------- */
+/* =========================================
+   TOGGLE
+========================================= */
 
 function ToggleRow({
   title,
@@ -445,26 +737,18 @@ function ToggleRow({
         type="button"
         aria-label={title}
         onClick={() => onChange(!checked)}
-        className={`
-          relative h-7 w-12 shrink-0 rounded-full
-          border transition-all
-          ${
-            checked
-              ? "border-[#d6b56a]/40 bg-[#d6b56a]/20"
-              : "border-white/10 bg-white/[0.04]"
-          }
-        `}
+        className={`relative h-7 w-12 shrink-0 rounded-full border transition-all ${
+          checked
+            ? "border-[#d6b56a]/40 bg-[#d6b56a]/20"
+            : "border-white/10 bg-white/[0.04]"
+        }`}
       >
         <span
-          className={`
-            absolute top-1 h-5 w-5 rounded-full
-            transition-all
-            ${
-              checked
-                ? "left-6 bg-[#d6b56a]"
-                : "left-1 bg-white/30"
-            }
-          `}
+          className={`absolute top-1 h-5 w-5 rounded-full transition-all ${
+            checked
+              ? "left-6 bg-[#d6b56a]"
+              : "left-1 bg-white/30"
+          }`}
         />
       </button>
     </div>

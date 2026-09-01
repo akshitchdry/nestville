@@ -1,184 +1,221 @@
 ﻿"use client";
 
-import Image from "next/image";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
-import {
-  ArrowUpRight,
-  Bath,
-  BedDouble,
-  Building2,
-  Heart,
-  MapPin,
-  Maximize2,
-} from "lucide-react";
-import { useState } from "react";
+import { Heart } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
-export interface Property {
+interface Property {
   id: number;
+  slug: string;
   title: string;
   location: string;
-  image: string;
   price: string;
-  type: string;
-  status?: string;
-  bedrooms: number;
-  bathrooms: number;
-  area: string;
-  featured?: boolean;
-  href?: string;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area: string | null;
+  image: string | null;
+  category: string | null;
+  featured: boolean | null;
 }
 
 interface PropertyCardProps {
   property: Property;
-  index?: number;
 }
 
 export default function PropertyCard({
   property,
-  index = 0,
 }: PropertyCardProps) {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isFavourite, setIsFavourite] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const {
-    title,
-    location,
-    image,
-    price,
-    type,
-    status = "Available",
-    bedrooms,
-    bathrooms,
-    area,
-    featured = false,
-    href = `/properties/${property.id}`,
-  } = property;
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadFavourite() {
+      const supabase = createClient();
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!mounted || !user) {
+        return;
+      }
+
+      setUserId(user.id);
+
+      const { data, error } = await supabase
+        .from("favourites")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("property_id", property.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error(
+          "Error loading favourite:",
+          error.message
+        );
+        return;
+      }
+
+      if (mounted) {
+        setIsFavourite(!!data);
+      }
+    }
+
+    loadFavourite();
+
+    return () => {
+      mounted = false;
+    };
+  }, [property.id]);
+
+  async function toggleFavourite(
+    event: React.MouseEvent<HTMLButtonElement>
+  ) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (loading) {
+      return;
+    }
+
+    const supabase = createClient();
+
+    let currentUserId = userId;
+
+    // Agar userId abhi state me nahi aayi hai,
+    // directly Supabase se user check karo.
+    if (!currentUserId) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        alert("Please login to save favourites.");
+        return;
+      }
+
+      currentUserId = user.id;
+      setUserId(user.id);
+    }
+
+    setLoading(true);
+
+    try {
+      if (isFavourite) {
+        const { error } = await supabase
+          .from("favourites")
+          .delete()
+          .eq("user_id", currentUserId)
+          .eq("property_id", property.id);
+
+        if (error) {
+          throw error;
+        }
+
+        setIsFavourite(false);
+      } else {
+        const { error } = await supabase
+          .from("favourites")
+          .insert({
+            user_id: currentUserId,
+            property_id: property.id,
+          });
+
+        if (error) {
+          throw error;
+        }
+
+        setIsFavourite(true);
+      }
+
+      // Favourites page / other components ko update signal
+      window.dispatchEvent(
+        new Event("favourites-changed")
+      );
+    } catch (error) {
+      console.error("Favourite error:", error);
+
+      alert(
+        "Unable to update favourite. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const image =
+    property.image &&
+    property.image.startsWith("/")
+      ? property.image
+      : "/images/properties/residence-1.webp";
 
   return (
-    <motion.article
-      initial={{
-        opacity: 0,
-        y: 45,
-      }}
-      whileInView={{
-        opacity: 1,
-        y: 0,
-      }}
-      viewport={{
-        once: true,
-        amount: 0.15,
-      }}
-      transition={{
-        duration: 0.75,
-        delay: index * 0.08,
-        ease: [0.22, 1, 0.36, 1],
-      }}
-      whileHover={{
-        y: -10,
-      }}
+    <Link
+      href={`/properties/${property.slug}`}
       className="
         group
         relative
         overflow-hidden
-        rounded-[30px]
+        rounded-[28px]
         border
-        border-white/[0.08]
-        bg-[#0d0d0c]
-        shadow-[0_30px_90px_rgba(0,0,0,0.35)]
+        border-white/10
+        bg-white/[0.025]
         transition-all
         duration-500
-        hover:border-[#d4af67]/30
+        hover:-translate-y-1
+        hover:border-[#d6b56a]/30
       "
     >
-      <div className="relative h-[330px] overflow-hidden sm:h-[360px]">
-        <Image
+      {/* IMAGE */}
+
+      <div className="relative aspect-[4/3] overflow-hidden bg-[#0b0c0b]">
+        <img
           src={image}
-          alt={title}
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          alt={property.title}
           className="
+            h-full
+            w-full
             object-cover
             transition-transform
-            duration-[1200ms]
-            ease-out
-            group-hover:scale-[1.08]
+            duration-700
+            group-hover:scale-105
           "
         />
+
+        {/* IMAGE GRADIENT */}
 
         <div
           className="
             absolute
             inset-0
             bg-gradient-to-t
-            from-black
-            via-black/20
-            to-black/10
+            from-black/70
+            via-transparent
+            to-transparent
           "
         />
 
-        <div
-          className="
-            absolute
-            inset-0
-            bg-[#c79d52]/0
-            transition-colors
-            duration-500
-            group-hover:bg-[#c79d52]/10
-          "
-        />
-
-        <div className="absolute left-5 top-5 flex flex-wrap gap-3">
-          {featured && (
-            <span
-              className="
-                rounded-full
-                border
-                border-[#d4af67]/40
-                bg-[#d4af67]
-                px-4
-                py-2
-                text-[9px]
-                font-semibold
-                uppercase
-                tracking-[0.24em]
-                text-[#15110a]
-              "
-            >
-              Featured
-            </span>
-          )}
-
-          <span
-            className="
-              rounded-full
-              border
-              border-white/15
-              bg-black/35
-              px-4
-              py-2
-              text-[9px]
-              uppercase
-              tracking-[0.22em]
-              text-white/75
-              backdrop-blur-xl
-            "
-          >
-            {status}
-          </span>
-        </div>
+        {/* FAVOURITE BUTTON */}
 
         <button
           type="button"
-          onClick={() => setIsFavorite((current) => !current)}
+          onClick={toggleFavourite}
+          disabled={loading}
           aria-label={
-            isFavorite
-              ? "Remove property from favorites"
-              : "Add property to favorites"
+            isFavourite
+              ? "Remove from favourites"
+              : "Add to favourites"
           }
           className={`
             absolute
             right-5
             top-5
+            z-20
             flex
             h-11
             w-11
@@ -186,249 +223,176 @@ export default function PropertyCard({
             justify-center
             rounded-full
             border
-            backdrop-blur-xl
+            backdrop-blur-md
             transition-all
             duration-300
             ${
-              isFavorite
-                ? "border-[#d4af67] bg-[#d4af67] text-black"
-                : "border-white/15 bg-black/30 text-white hover:border-[#d4af67]/50 hover:text-[#d4af67]"
+              isFavourite
+                ? "border-[#d6b56a] bg-[#d6b56a] text-black"
+                : "border-white/15 bg-black/50 text-white/70 hover:border-[#d6b56a] hover:bg-[#d6b56a] hover:text-black"
             }
           `}
         >
           <Heart
             size={17}
-            fill={isFavorite ? "currentColor" : "none"}
+            strokeWidth={1.7}
+            fill={
+              isFavourite
+                ? "currentColor"
+                : "none"
+            }
           />
         </button>
 
-        <div className="absolute bottom-0 left-0 w-full p-6">
-          <div className="flex items-end justify-between gap-5">
-            <div>
-              <span
-                className="
-                  text-[9px]
-                  uppercase
-                  tracking-[0.32em]
-                  text-[#d4af67]
-                "
-              >
-                Starting From
-              </span>
+        {/* FEATURED */}
 
-              <p className="mt-2 text-2xl font-light text-white sm:text-3xl">
-                {price}
-              </p>
-            </div>
-
-            <motion.div
-              whileHover={{
-                rotate: 8,
-                scale: 1.05,
-              }}
-              className="
-                flex
-                h-12
-                w-12
-                items-center
-                justify-center
-                rounded-full
-                border
-                border-white/15
-                bg-white/[0.08]
-                text-white
-                backdrop-blur-xl
-                transition-all
-                duration-300
-                group-hover:border-[#d4af67]
-                group-hover:bg-[#d4af67]
-                group-hover:text-black
-              "
-            >
-              <ArrowUpRight size={19} />
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6 sm:p-7">
-        <div className="flex items-center justify-between gap-5">
+        {property.featured && (
           <span
             className="
-              inline-flex
-              items-center
-              gap-2
+              absolute
+              left-5
+              top-5
               rounded-full
               border
-              border-white/10
-              bg-white/[0.03]
+              border-[#d6b56a]/30
+              bg-black/50
               px-3
               py-2
-              text-[9px]
+              text-[8px]
               uppercase
-              tracking-[0.2em]
-              text-white/45
+              tracking-[0.18em]
+              text-[#e6ca86]
+              backdrop-blur-md
             "
           >
-            <Building2 size={13} className="text-[#d4af67]" />
-
-            {type}
+            Featured
           </span>
+        )}
 
-          <span className="text-[10px] uppercase tracking-[0.2em] text-white/25">
-            ID {String(property.id).padStart(3, "0")}
-          </span>
-        </div>
+        {/* CATEGORY */}
 
-        <Link href={href} className="mt-6 block">
-          <h3
+        <span
+          className="
+            absolute
+            bottom-5
+            left-5
+            rounded-full
+            border
+            border-white/10
+            bg-black/50
+            px-3
+            py-2
+            text-[8px]
+            uppercase
+            tracking-[0.18em]
+            text-white/70
+            backdrop-blur-md
+          "
+        >
+          {property.category ||
+            "Luxury Property"}
+        </span>
+      </div>
+
+      {/* CONTENT */}
+
+      <div className="p-6">
+        <div
+          className="
+            flex
+            items-start
+            justify-between
+            gap-4
+          "
+        >
+          <div className="min-w-0">
+            <h2 className="truncate text-xl font-light text-white">
+              {property.title}
+            </h2>
+
+            <p className="mt-2 text-xs text-white/35">
+              {property.location}
+            </p>
+          </div>
+
+          <p
             className="
-              text-2xl
-              font-light
-              leading-snug
-              text-white
-              transition-colors
-              duration-300
-              group-hover:text-[#e0bf7a]
+              shrink-0
+              text-sm
+              text-[#d6b56a]
             "
           >
-            {title}
-          </h3>
-        </Link>
-
-        <div className="mt-4 flex items-start gap-3 text-sm text-white/45">
-          <MapPin
-            size={16}
-            className="mt-0.5 shrink-0 text-[#d4af67]"
-          />
-
-          <span className="leading-6">{location}</span>
+            {property.price}
+          </p>
         </div>
+
+        {/* DETAILS */}
+
+        <div className="mt-6 flex flex-wrap gap-2">
+          <InfoBadge>
+            {property.bedrooms ?? 0} Beds
+          </InfoBadge>
+
+          <InfoBadge>
+            {property.bathrooms ?? 0} Baths
+          </InfoBadge>
+
+          <InfoBadge>
+            {property.area ||
+              "Area on Request"}
+          </InfoBadge>
+        </div>
+
+        {/* VIEW */}
 
         <div
           className="
-            mt-7
-            grid
-            grid-cols-3
-            divide-x
-            divide-white/10
-            rounded-[20px]
-            border
-            border-white/[0.08]
-            bg-white/[0.025]
-            px-2
-            py-4
-          "
-        >
-          <div className="flex flex-col items-center gap-2 px-2">
-            <BedDouble size={17} className="text-[#d4af67]" />
-
-            <span className="text-sm text-white">{bedrooms}</span>
-
-            <span className="text-[8px] uppercase tracking-[0.18em] text-white/30">
-              Beds
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center gap-2 px-2">
-            <Bath size={17} className="text-[#d4af67]" />
-
-            <span className="text-sm text-white">{bathrooms}</span>
-
-            <span className="text-[8px] uppercase tracking-[0.18em] text-white/30">
-              Baths
-            </span>
-          </div>
-
-          <div className="flex flex-col items-center gap-2 px-2">
-            <Maximize2 size={17} className="text-[#d4af67]" />
-
-            <span className="text-sm text-white">{area}</span>
-
-            <span className="text-[8px] uppercase tracking-[0.18em] text-white/30">
-              Area
-            </span>
-          </div>
-        </div>
-
-        <Link
-          href={href}
-          className="
-            group/button
-            mt-7
-            flex
-            items-center
-            justify-between
+            mt-6
             border-t
             border-white/10
-            pt-6
+            pt-5
           "
         >
           <span
             className="
-              text-[10px]
+              text-[9px]
               uppercase
-              tracking-[0.28em]
-              text-white/45
+              tracking-[0.2em]
+              text-white/40
               transition-colors
-              duration-300
-              group-hover/button:text-[#d4af67]
+              group-hover:text-[#d6b56a]
             "
           >
-            View Property
+            Explore Residence →
           </span>
-
-          <span
-            className="
-              relative
-              flex
-              h-10
-              w-10
-              items-center
-              justify-center
-              overflow-hidden
-              rounded-full
-              border
-              border-white/10
-              bg-white/[0.03]
-              text-white/60
-              transition-all
-              duration-300
-              group-hover/button:border-[#d4af67]
-              group-hover/button:bg-[#d4af67]
-              group-hover/button:text-black
-            "
-          >
-            <ArrowUpRight
-              size={16}
-              className="
-                transition-transform
-                duration-300
-                group-hover/button:-translate-y-0.5
-                group-hover/button:translate-x-0.5
-              "
-            />
-          </span>
-        </Link>
+        </div>
       </div>
+    </Link>
+  );
+}
 
-      <div
-        className="
-          pointer-events-none
-          absolute
-          inset-x-10
-          bottom-0
-          h-px
-          scale-x-0
-          bg-gradient-to-r
-          from-transparent
-          via-[#d4af67]
-          to-transparent
-          transition-transform
-          duration-700
-          group-hover:scale-x-100
-        "
-      />
-    </motion.article>
+/* =========================================
+   INFO BADGE
+========================================= */
+
+function InfoBadge({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className="
+        rounded-full
+        border
+        border-white/10
+        px-3
+        py-2
+        text-[9px]
+        text-white/40
+      "
+    >
+      {children}
+    </span>
   );
 }
