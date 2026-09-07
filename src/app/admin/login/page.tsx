@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRight,
@@ -22,9 +22,7 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setError("");
@@ -48,10 +46,7 @@ export default function AdminLoginPage() {
       router.replace("/admin");
       router.refresh();
     } catch {
-      setError(
-        "Something went wrong. Please try again."
-      );
-
+      setError("Something went wrong. Please try again.");
       setLoading(false);
     }
   }
@@ -222,8 +217,7 @@ export default function AdminLoginPage() {
                 text-white/40
               "
             >
-              Sign in with your NestVille
-              administrator account.
+              Sign in with your NestVille administrator account.
             </p>
           </div>
 
@@ -327,11 +321,7 @@ export default function AdminLoginPage() {
                 />
 
                 <input
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
+                  type={showPassword ? "text" : "password"}
                   required
                   autoComplete="current-password"
                   value={password}
@@ -352,9 +342,7 @@ export default function AdminLoginPage() {
                 <button
                   type="button"
                   onClick={() =>
-                    setShowPassword(
-                      (current) => !current
-                    )
+                    setShowPassword((current) => !current)
                   }
                   aria-label={
                     showPassword
@@ -376,6 +364,28 @@ export default function AdminLoginPage() {
               </div>
             </label>
 
+            {/* FORGOT PASSWORD */}
+
+            <div className="-mt-2 flex justify-end">
+              <a
+                href="/admin/forgot-password"
+                className="
+                  relative
+                  z-50
+                  block
+                  cursor-pointer
+                  text-[9px]
+                  uppercase
+                  tracking-[0.16em]
+                  text-[#d6b56a]/70
+                  transition-colors
+                  hover:text-[#d6b56a]
+                "
+              >
+                Forgot Password?
+              </a>
+            </div>
+
             {/* ERROR */}
 
             {error && (
@@ -395,7 +405,7 @@ export default function AdminLoginPage() {
               </div>
             )}
 
-            {/* BUTTON */}
+            {/* SIGN IN */}
 
             <button
               type="submit"
@@ -425,9 +435,7 @@ export default function AdminLoginPage() {
                 disabled:opacity-60
               "
             >
-              {loading
-                ? "Signing In..."
-                : "Sign In"}
+              {loading ? "Signing In..." : "Sign In"}
 
               {!loading && (
                 <ArrowRight
@@ -442,7 +450,7 @@ export default function AdminLoginPage() {
             </button>
           </form>
 
-          {/* RETURN */}
+          {/* RETURN TO WEBSITE */}
 
           <div
             className="
