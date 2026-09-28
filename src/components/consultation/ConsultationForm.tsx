@@ -37,12 +37,14 @@ export default function ConsultationForm() {
     useState<ConsultationFormData>(initialFormData);
 
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const handleChange = (
     event:
       | React.ChangeEvent<HTMLInputElement>
       | React.ChangeEvent<HTMLSelectElement>
-      | React.ChangeEvent<HTMLTextAreaElement>
+      | React.ChangeEvent<HTMLTextAreaElement>,
   ) => {
     const { name, value } = event.target;
 
@@ -54,13 +56,53 @@ export default function ConsultationForm() {
     if (submitted) {
       setSubmitted(false);
     }
+
+    if (submitError) {
+      setSubmitError("");
+    }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
 
-    setSubmitted(true);
-    setFormData(initialFormData);
+    if (submitting) return;
+
+    try {
+      setSubmitting(true);
+      setSubmitted(false);
+      setSubmitError("");
+
+      const response = await fetch("/api/enquiries", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "Unable to submit enquiry.",
+        );
+      }
+
+      setSubmitted(true);
+      setFormData(initialFormData);
+    } catch (error) {
+      console.error("Consultation submit error:", error);
+
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Unable to submit enquiry. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -95,6 +137,8 @@ export default function ConsultationForm() {
         lg:p-10
       "
     >
+      {/* GLOW — TOP RIGHT */}
+
       <div
         className="
           pointer-events-none
@@ -108,6 +152,8 @@ export default function ConsultationForm() {
           blur-[135px]
         "
       />
+
+      {/* GLOW — BOTTOM LEFT */}
 
       <div
         className="
@@ -127,6 +173,8 @@ export default function ConsultationForm() {
         onSubmit={handleSubmit}
         className="relative z-10"
       >
+        {/* HEADER */}
+
         <div className="mb-9">
           <span
             className="
@@ -164,12 +212,17 @@ export default function ConsultationForm() {
               text-white/55
             "
           >
-            Share your preferences and our property team will contact
-            you with a curated selection of premium residences.
+            Share your preferences and our property team will
+            contact you with a curated selection of premium
+            residences.
           </p>
         </div>
 
+        {/* FIELDS */}
+
         <div className="grid gap-5 sm:grid-cols-2">
+          {/* NAME */}
+
           <label className="group block">
             <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
               Full Name
@@ -203,6 +256,7 @@ export default function ConsultationForm() {
                 onChange={handleChange}
                 placeholder="Your name"
                 required
+                autoComplete="name"
                 className="
                   h-14
                   w-full
@@ -215,6 +269,8 @@ export default function ConsultationForm() {
               />
             </div>
           </label>
+
+          {/* EMAIL */}
 
           <label className="group block">
             <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
@@ -249,6 +305,7 @@ export default function ConsultationForm() {
                 onChange={handleChange}
                 placeholder="name@email.com"
                 required
+                autoComplete="email"
                 className="
                   h-14
                   w-full
@@ -261,6 +318,8 @@ export default function ConsultationForm() {
               />
             </div>
           </label>
+
+          {/* PHONE */}
 
           <label className="group block">
             <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
@@ -295,6 +354,7 @@ export default function ConsultationForm() {
                 onChange={handleChange}
                 placeholder="+971 50 000 0000"
                 required
+                autoComplete="tel"
                 className="
                   h-14
                   w-full
@@ -307,6 +367,8 @@ export default function ConsultationForm() {
               />
             </div>
           </label>
+
+          {/* PROPERTY TYPE */}
 
           <label className="group block">
             <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
@@ -387,6 +449,8 @@ export default function ConsultationForm() {
             </div>
           </label>
 
+          {/* LOCATION */}
+
           <label className="group block">
             <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
               Preferred Location
@@ -420,6 +484,7 @@ export default function ConsultationForm() {
                 onChange={handleChange}
                 placeholder="Dubai Marina"
                 required
+                autoComplete="address-level2"
                 className="
                   h-14
                   w-full
@@ -432,6 +497,8 @@ export default function ConsultationForm() {
               />
             </div>
           </label>
+
+          {/* DATE */}
 
           <label className="group block">
             <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
@@ -479,6 +546,8 @@ export default function ConsultationForm() {
           </label>
         </div>
 
+        {/* MESSAGE */}
+
         <label className="mt-5 block">
           <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
             Your Requirements
@@ -512,6 +581,8 @@ export default function ConsultationForm() {
           />
         </label>
 
+        {/* BOTTOM AREA */}
+
         <div
           className="
             mt-7
@@ -531,18 +602,19 @@ export default function ConsultationForm() {
               text-white/35
             "
           >
-            By submitting this form, you agree to be contacted by a
-            NestVille property advisor regarding your enquiry.
+            By submitting this form, you agree to be contacted by
+            a NestVille property advisor regarding your enquiry.
           </p>
 
           <motion.button
             type="submit"
+            disabled={submitting}
             whileHover={{
-              scale: 1.03,
-              y: -2,
+              scale: submitting ? 1 : 1.03,
+              y: submitting ? 0 : -2,
             }}
             whileTap={{
-              scale: 0.97,
+              scale: submitting ? 1 : 0.97,
             }}
             className="
               inline-flex
@@ -563,13 +635,49 @@ export default function ConsultationForm() {
               tracking-[0.22em]
               text-[#050505]
               shadow-[0_14px_45px_rgba(214,181,106,0.18)]
+              transition-opacity
+              disabled:cursor-wait
+              disabled:opacity-60
             "
           >
-            Request Consultation
+            {submitting
+              ? "Submitting..."
+              : "Request Consultation"}
 
-            <ArrowUpRight size={17} />
+            {!submitting && <ArrowUpRight size={17} />}
           </motion.button>
         </div>
+
+        {/* ERROR */}
+
+        {submitError && (
+          <motion.div
+            initial={{
+              opacity: 0,
+              y: 12,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            className="
+              mt-6
+              rounded-[18px]
+              border
+              border-red-400/20
+              bg-red-400/10
+              px-5
+              py-4
+              text-sm
+              leading-6
+              text-red-300
+            "
+          >
+            {submitError}
+          </motion.div>
+        )}
+
+        {/* SUCCESS */}
 
         {submitted && (
           <motion.div
@@ -590,13 +698,17 @@ export default function ConsultationForm() {
               px-5
               py-4
               text-sm
+              leading-6
               text-[#e5ca89]
             "
           >
-            Thank you. A NestVille advisor will contact you shortly.
+            Thank you. A NestVille advisor will contact you
+            shortly.
           </motion.div>
         )}
       </form>
+
+      {/* BORDER */}
 
       <div
         className="

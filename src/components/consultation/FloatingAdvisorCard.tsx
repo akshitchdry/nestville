@@ -85,7 +85,7 @@ export default function FloatingAdvisorCard() {
             </span>
 
             <h3 className="mt-2 text-3xl font-light text-white">
-              Nayan Bishnoi
+              Nayan Vishnoi
             </h3>
 
             <p className="mt-2 text-white/50">Luxury Property Consultant</p>

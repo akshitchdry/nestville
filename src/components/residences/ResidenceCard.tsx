@@ -2,10 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-
-import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
+import { motion } from "framer-motion";
 import {
   ArrowUpRight,
   Bath,
@@ -26,6 +25,82 @@ export default function ResidenceCard({
   residence,
   index,
 }: ResidenceCardProps) {
+  const [isFavourite, setIsFavourite] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFavouriteStatus() {
+      try {
+        const response = await fetch("/api/favourites", {
+          method: "GET",
+          cache: "no-store",
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        if (cancelled) return;
+
+        const property = data?.properties?.find(
+          (item: { slug?: string }) =>
+            item?.slug === residence.slug,
+        );
+
+        setIsFavourite(Boolean(property));
+      } catch {
+        // User may simply be logged out.
+      }
+    }
+
+    loadFavouriteStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [residence.slug]);
+
+  async function toggleFavourite() {
+    if (loading) return;
+
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/favourites", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          slug: residence.slug,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.status === 401) {
+        window.location.href = `/auth?redirect=/properties/${residence.slug}`;
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "Unable to update favourite",
+        );
+      }
+
+      setIsFavourite(Boolean(data.favourite));
+
+      window.dispatchEvent(new Event("favourites-changed"));
+    } catch (error) {
+      console.error("Favourite error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <motion.article
       initial={{
@@ -61,8 +136,6 @@ export default function ResidenceCard({
         shadow-[0_25px_80px_rgba(0,0,0,0.45)]
       "
     >
-      {/* IMAGE */}
-
       <div className="relative h-[72%] overflow-hidden">
         <Image
           src={residence.image}
@@ -101,8 +174,6 @@ export default function ResidenceCard({
           "
         />
 
-        {/* TOP BAR */}
-
         <div
           className="
             absolute
@@ -134,13 +205,18 @@ export default function ResidenceCard({
           </div>
 
           <motion.button
-            whileHover={{
-              scale: 1.08,
-            }}
-            whileTap={{
-              scale: 0.92,
-            }}
-            className="
+            type="button"
+            aria-label={
+              isFavourite
+                ? "Remove from favourites"
+                : "Add to favourites"
+            }
+            aria-pressed={isFavourite}
+            disabled={loading}
+            onClick={toggleFavourite}
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.92 }}
+            className={`
               flex
               h-11
               w-11
@@ -148,25 +224,26 @@ export default function ResidenceCard({
               justify-center
               rounded-full
               border
-              border-white/15
-              bg-black/35
-              text-white/70
               backdrop-blur-xl
               transition-all
               duration-300
-              hover:border-[#d5b365]
-              hover:bg-[#c8a35b]
-              hover:text-black
-            "
+              disabled:cursor-wait
+              disabled:opacity-60
+              ${
+                isFavourite
+                  ? "border-[#d5b365] bg-[#c8a35b] text-black"
+                  : "border-white/15 bg-black/35 text-white/70 hover:border-[#d5b365] hover:bg-[#c8a35b] hover:text-black"
+              }
+            `}
           >
             <Heart
               size={16}
               strokeWidth={1.5}
+              fill={isFavourite ? "currentColor" : "none"}
             />
           </motion.button>
         </div>
       </div>
-             {/* CONTENT */}
 
       <div
         className="
@@ -321,8 +398,6 @@ export default function ResidenceCard({
         </div>
       </div>
 
-      {/* BORDER HOVER */}
-
       <div
         className="
           pointer-events-none
@@ -337,8 +412,6 @@ export default function ResidenceCard({
           group-hover:shadow-[inset_0_0_40px_rgba(216,182,110,0.05)]
         "
       />
-
-      {/* BOTTOM LINE */}
 
       <span
         className="
@@ -389,4 +462,3 @@ function Feature({
     </div>
   );
 }
-      

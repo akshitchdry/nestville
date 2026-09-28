@@ -40,6 +40,8 @@ export default function PropertySidebar({
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const paymentDetails = useMemo(
     () => [
@@ -63,21 +65,64 @@ export default function PropertySidebar({
     [bookingAmount, maintenance, possession, price],
   );
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+  ) {
     event.preventDefault();
 
-    setSubmitted(true);
+    if (submitting) return;
 
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      preferredDate: "",
-    });
-
-    window.setTimeout(() => {
+    try {
+      setSubmitting(true);
       setSubmitted(false);
-    }, 4000);
+      setSubmitError("");
+
+      const response = await fetch("/api/enquiries", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          property: title,
+          preferredDate: formData.preferredDate,
+          message: `Private viewing request for ${title}.`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error || "Unable to submit enquiry.",
+        );
+      }
+
+      setSubmitted(true);
+
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        preferredDate: "",
+      });
+
+      window.setTimeout(() => {
+        setSubmitted(false);
+      }, 5000);
+    } catch (error) {
+      console.error("Viewing enquiry error:", error);
+
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Unable to submit enquiry. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -101,6 +146,8 @@ export default function PropertySidebar({
         }}
         className="sticky top-28 space-y-6"
       >
+        {/* PAYMENT CARD */}
+
         <div
           className="
             relative
@@ -130,6 +177,8 @@ export default function PropertySidebar({
           />
 
           <div className="relative z-10">
+            {/* PRICE */}
+
             <div className="flex items-center justify-between gap-5">
               <div>
                 <span
@@ -166,6 +215,8 @@ export default function PropertySidebar({
               </span>
             </div>
 
+            {/* PAYMENT DETAILS */}
+
             <div className="mt-8 space-y-4">
               {paymentDetails.map((item) => (
                 <div
@@ -193,6 +244,8 @@ export default function PropertySidebar({
                 </div>
               ))}
             </div>
+
+            {/* BROCHURE */}
 
             <a
               href={brochureHref}
@@ -235,6 +288,8 @@ export default function PropertySidebar({
           </div>
         </div>
 
+        {/* PRIVATE ENQUIRY */}
+
         <div
           className="
             relative
@@ -263,8 +318,13 @@ export default function PropertySidebar({
           />
 
           <div className="relative z-10">
+            {/* TITLE */}
+
             <div className="flex items-center gap-3">
-              <ShieldCheck size={18} className="text-[#d4af67]" />
+              <ShieldCheck
+                size={18}
+                className="text-[#d4af67]"
+              />
 
               <span
                 className="
@@ -283,11 +343,18 @@ export default function PropertySidebar({
             </h3>
 
             <p className="mt-4 text-sm leading-7 text-white/45">
-              Share your details and our luxury property advisor will contact
-              you regarding {title}.
+              Share your details and our luxury property advisor
+              will contact you regarding {title}.
             </p>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            {/* FORM */}
+
+            <form
+              onSubmit={handleSubmit}
+              className="mt-8 space-y-4"
+            >
+              {/* NAME */}
+
               <label
                 className="
                   flex
@@ -303,19 +370,27 @@ export default function PropertySidebar({
                   focus-within:border-[#d4af67]/50
                 "
               >
-                <User size={17} className="shrink-0 text-[#d4af67]" />
+                <User
+                  size={17}
+                  className="shrink-0 text-[#d4af67]"
+                />
 
                 <input
                   type="text"
                   required
                   value={formData.name}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setFormData((current) => ({
                       ...current,
                       name: event.target.value,
-                    }))
-                  }
+                    }));
+
+                    if (submitError) {
+                      setSubmitError("");
+                    }
+                  }}
                   placeholder="Full name"
+                  autoComplete="name"
                   className="
                     h-14
                     w-full
@@ -327,6 +402,8 @@ export default function PropertySidebar({
                   "
                 />
               </label>
+
+              {/* EMAIL */}
 
               <label
                 className="
@@ -343,19 +420,27 @@ export default function PropertySidebar({
                   focus-within:border-[#d4af67]/50
                 "
               >
-                <Mail size={17} className="shrink-0 text-[#d4af67]" />
+                <Mail
+                  size={17}
+                  className="shrink-0 text-[#d4af67]"
+                />
 
                 <input
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setFormData((current) => ({
                       ...current,
                       email: event.target.value,
-                    }))
-                  }
+                    }));
+
+                    if (submitError) {
+                      setSubmitError("");
+                    }
+                  }}
                   placeholder="Email address"
+                  autoComplete="email"
                   className="
                     h-14
                     w-full
@@ -367,6 +452,8 @@ export default function PropertySidebar({
                   "
                 />
               </label>
+
+              {/* PHONE */}
 
               <label
                 className="
@@ -383,19 +470,27 @@ export default function PropertySidebar({
                   focus-within:border-[#d4af67]/50
                 "
               >
-                <Phone size={17} className="shrink-0 text-[#d4af67]" />
+                <Phone
+                  size={17}
+                  className="shrink-0 text-[#d4af67]"
+                />
 
                 <input
                   type="tel"
                   required
                   value={formData.phone}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setFormData((current) => ({
                       ...current,
                       phone: event.target.value,
-                    }))
-                  }
+                    }));
+
+                    if (submitError) {
+                      setSubmitError("");
+                    }
+                  }}
                   placeholder="Phone number"
+                  autoComplete="tel"
                   className="
                     h-14
                     w-full
@@ -407,6 +502,8 @@ export default function PropertySidebar({
                   "
                 />
               </label>
+
+              {/* DATE */}
 
               <label
                 className="
@@ -432,12 +529,16 @@ export default function PropertySidebar({
                   type="date"
                   required
                   value={formData.preferredDate}
-                  onChange={(event) =>
+                  onChange={(event) => {
                     setFormData((current) => ({
                       ...current,
                       preferredDate: event.target.value,
-                    }))
-                  }
+                    }));
+
+                    if (submitError) {
+                      setSubmitError("");
+                    }
+                  }}
                   className="
                     h-14
                     w-full
@@ -450,13 +551,16 @@ export default function PropertySidebar({
                 />
               </label>
 
+              {/* BUTTON */}
+
               <motion.button
                 type="submit"
+                disabled={submitting}
                 whileHover={{
-                  scale: 1.02,
+                  scale: submitting ? 1 : 1.02,
                 }}
                 whileTap={{
-                  scale: 0.98,
+                  scale: submitting ? 1 : 0.98,
                 }}
                 className="
                   group
@@ -478,21 +582,61 @@ export default function PropertySidebar({
                   tracking-[0.26em]
                   text-[#100d08]
                   shadow-[0_20px_50px_rgba(212,175,103,0.16)]
+                  transition-opacity
+                  disabled:cursor-wait
+                  disabled:opacity-60
                 "
               >
-                Schedule Viewing
+                {submitting
+                  ? "Submitting..."
+                  : "Schedule Viewing"}
 
-                <ArrowUpRight
-                  size={17}
-                  className="
-                    transition-transform
-                    duration-300
-                    group-hover:-translate-y-0.5
-                    group-hover:translate-x-0.5
-                  "
-                />
+                {!submitting && (
+                  <ArrowUpRight
+                    size={17}
+                    className="
+                      transition-transform
+                      duration-300
+                      group-hover:-translate-y-0.5
+                      group-hover:translate-x-0.5
+                    "
+                  />
+                )}
               </motion.button>
             </form>
+
+            {/* ERROR */}
+
+            {submitError && (
+              <motion.div
+                initial={{
+                  opacity: 0,
+                  y: 10,
+                }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                }}
+                className="
+                  mt-5
+                  flex
+                  items-center
+                  gap-3
+                  rounded-2xl
+                  border
+                  border-red-400/20
+                  bg-red-400/10
+                  px-5
+                  py-4
+                  text-sm
+                  text-red-300
+                "
+              >
+                {submitError}
+              </motion.div>
+            )}
+
+            {/* SUCCESS */}
 
             {submitted && (
               <motion.div
@@ -527,6 +671,8 @@ export default function PropertySidebar({
           </div>
         </div>
 
+        {/* VERIFIED LISTING */}
+
         <div
           className="
             rounded-[26px]
@@ -541,8 +687,8 @@ export default function PropertySidebar({
             <span className="font-medium text-[#d4af67]">
               Verified listing.
             </span>{" "}
-            Property details and pricing are subject to final confirmation by
-            the developer or authorized advisor.
+            Property details and pricing are subject to final
+            confirmation by the developer or authorized advisor.
           </p>
         </div>
       </motion.div>

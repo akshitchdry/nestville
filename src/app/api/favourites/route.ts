@@ -2,122 +2,175 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  try {
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    const { data, error } = await supabase
-      .from("favourites")
-      .select("property_id")
-      .eq("user_id", user.id);
-
-    if (error) {
-      console.error("Get favourites error:", error);
-
-      return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({
-      favourites: data ?? [],
-    });
-  } catch (error) {
-    console.error("Favourites GET error:", error);
-
+  if (userError || !user) {
     return NextResponse.json(
-      { error: "Failed to load favourites" },
-      { status: 500 }
+      { favourites: [], authenticated: false },
+      { status: 401 },
     );
   }
+
+  const { data: favouriteRows, error: favouritesError } = await supabase
+    .from("favourites")
+    .select("property_id")
+    .eq("user_id", user.id);
+
+  if (favouritesError) {
+    return NextResponse.json(
+      { error: favouritesError.message },
+      { status: 500 },
+    );
+  }
+
+  const propertyIds = (favouriteRows ?? []).map(
+    (item) => item.property_id,
+  );
+
+  if (propertyIds.length === 0) {
+    return NextResponse.json({
+      favourites: [],
+      authenticated: true,
+    });
+  }
+
+  const { data: properties, error: propertiesError } = await supabase
+    .from("properties")
+    .select("*")
+    .in("id", propertyIds);
+
+  if (propertiesError) {
+    return NextResponse.json(
+      { error: propertiesError.message },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({
+    favourites: properties ?? [],
+    authenticated: true,
+  });
 }
 
 export async function POST(request: Request) {
-  try {
-    const supabase = await createClient();
+  const supabase = await createClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+  if (userError || !user) {
+    return NextResponse.json(
+      {
+        error: "Please sign in to save favourites.",
+        authenticated: false,
+      },
+      { status: 401 },
+    );
+  }
 
-    const body = await request.json();
-    const propertyId = Number(body.propertyId);
+  const body = await request.json().catch(() => null);
 
-    if (!propertyId) {
-      return NextResponse.json(
-        { error: "Property ID is required" },
-        { status: 400 }
-      );
-    }
+  const propertyId =
+    typeof body?.propertyId === "number"
+      ? body.propertyId
+      : Number(body?.propertyId);
 
-    const { data: existing } = await supabase
-      .from("favourites")
+  const slug =
+    typeof body?.slug === "string"
+      ? body.slug.trim()
+      : "";
+
+  let resolvedPropertyId = propertyId;
+
+  // If slug is provided, always resolve the real Supabase property ID.
+  if (slug) {
+    const { data: property, error: propertyError } = await supabase
+      .from("properties")
       .select("id")
-      .eq("user_id", user.id)
-      .eq("property_id", propertyId)
+      .eq("slug", slug)
       .maybeSingle();
 
-    if (existing) {
-      const { error } = await supabase
-        .from("favourites")
-        .delete()
-        .eq("id", existing.id);
-
-      if (error) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        favourite: false,
-      });
+    if (propertyError) {
+      return NextResponse.json(
+        { error: propertyError.message },
+        { status: 500 },
+      );
     }
 
-    const { error } = await supabase
-      .from("favourites")
-      .insert({
-        user_id: user.id,
-        property_id: propertyId,
-      });
-
-    if (error) {
-      console.error("Add favourite error:", error);
-
+    if (!property) {
       return NextResponse.json(
-        { error: error.message },
-        { status: 500 }
+        { error: "Property not found." },
+        { status: 404 },
+      );
+    }
+
+    resolvedPropertyId = property.id;
+  }
+
+  if (!Number.isInteger(resolvedPropertyId) || resolvedPropertyId <= 0) {
+    return NextResponse.json(
+      { error: "Valid property ID or slug is required." },
+      { status: 400 },
+    );
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from("favourites")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("property_id", resolvedPropertyId)
+    .maybeSingle();
+
+  if (existingError) {
+    return NextResponse.json(
+      { error: existingError.message },
+      { status: 500 },
+    );
+  }
+
+  if (existing) {
+    const { error: deleteError } = await supabase
+      .from("favourites")
+      .delete()
+      .eq("id", existing.id)
+      .eq("user_id", user.id);
+
+    if (deleteError) {
+      return NextResponse.json(
+        { error: deleteError.message },
+        { status: 500 },
       );
     }
 
     return NextResponse.json({
-      favourite: true,
+      favourite: false,
+      propertyId: resolvedPropertyId,
     });
-  } catch (error) {
-    console.error("Favourites POST error:", error);
+  }
 
+  const { error: insertError } = await supabase
+    .from("favourites")
+    .insert({
+      user_id: user.id,
+      property_id: resolvedPropertyId,
+    });
+
+  if (insertError) {
     return NextResponse.json(
-      { error: "Failed to update favourite" },
-      { status: 500 }
+      { error: insertError.message },
+      { status: 500 },
     );
   }
+
+  return NextResponse.json({
+    favourite: true,
+    propertyId: resolvedPropertyId,
+  });
 }

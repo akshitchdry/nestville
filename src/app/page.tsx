@@ -19,6 +19,7 @@ import JournalSection from "@/components/journal/JournalSection";
 import ConsultationSection from "@/components/consultation/ConsultationSection";
 import Footer from "@/components/footer/Footer";
 
+
 export default function Home() {
   return (
     <main
@@ -88,7 +89,9 @@ export default function Home() {
 
       {/* FOOTER */}
       <Footer />
-
+     
+      
+      
       {/* GLOBAL GRAIN EFFECT */}
       <div
         className="

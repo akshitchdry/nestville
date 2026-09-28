@@ -48,13 +48,16 @@ export async function updateSession(request: NextRequest) {
     pathname === "/admin" ||
     pathname.startsWith("/admin/");
 
-  const isLoginPage =
-    pathname === "/admin/login";
+  // Public admin authentication pages
+  const isPublicAdminRoute =
+    pathname === "/admin/login" ||
+    pathname === "/admin/forgot-password" ||
+    pathname === "/admin/reset-password";
 
-  // Not logged in -> admin pages blocked
+  // Protect admin dashboard/pages
   if (
     isAdminRoute &&
-    !isLoginPage &&
+    !isPublicAdminRoute &&
     !isLoggedIn
   ) {
     const url = request.nextUrl.clone();
@@ -64,8 +67,8 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Already logged in -> login page unnecessary
-  if (isLoginPage && isLoggedIn) {
+  // Logged-in users don't need the login page
+  if (pathname === "/admin/login" && isLoggedIn) {
     const url = request.nextUrl.clone();
 
     url.pathname = "/admin";
