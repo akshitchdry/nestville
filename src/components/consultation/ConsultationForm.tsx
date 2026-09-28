@@ -10,6 +10,7 @@ import {
   MapPin,
   Phone,
   User,
+  Loader2,
 } from "lucide-react";
 
 interface ConsultationFormData {
@@ -32,6 +33,16 @@ const initialFormData: ConsultationFormData = {
   message: "",
 };
 
+function getToday() {
+  const today = new Date();
+
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 export default function ConsultationForm() {
   const [formData, setFormData] =
     useState<ConsultationFormData>(initialFormData);
@@ -53,47 +64,60 @@ export default function ConsultationForm() {
       [name]: value,
     }));
 
-    if (submitted) {
-      setSubmitted(false);
-    }
-
-    if (submitError) {
-      setSubmitError("");
-    }
+    setSubmitted(false);
+    setSubmitError("");
   };
 
-  const handleSubmit = async (
+  async function handleSubmit(
     event: FormEvent<HTMLFormElement>,
-  ) => {
+  ) {
     event.preventDefault();
 
     if (submitting) return;
 
+    setSubmitting(true);
+    setSubmitted(false);
+    setSubmitError("");
+
     try {
-      setSubmitting(true);
-      setSubmitted(false);
-      setSubmitError("");
+      if (
+        formData.preferredDate &&
+        formData.preferredDate < getToday()
+      ) {
+        throw new Error(
+          "Please select today or a future consultation date.",
+        );
+      }
 
-      const response = await fetch("/api/enquiries", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        "/api/enquiries",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
         },
-        body: JSON.stringify(formData),
-      });
+      );
 
-      const data = await response.json();
+      const data = await response
+        .json()
+        .catch(() => null);
 
       if (!response.ok) {
         throw new Error(
-          data?.error || "Unable to submit enquiry.",
+          data?.error ||
+            "Unable to submit enquiry.",
         );
       }
 
       setSubmitted(true);
       setFormData(initialFormData);
     } catch (error) {
-      console.error("Consultation submit error:", error);
+      console.error(
+        "Consultation submit error:",
+        error,
+      );
 
       setSubmitError(
         error instanceof Error
@@ -103,7 +127,7 @@ export default function ConsultationForm() {
     } finally {
       setSubmitting(false);
     }
-  };
+  }
 
   return (
     <motion.div
@@ -137,8 +161,7 @@ export default function ConsultationForm() {
         lg:p-10
       "
     >
-      {/* GLOW — TOP RIGHT */}
-
+      {/* GLOW */}
       <div
         className="
           pointer-events-none
@@ -152,8 +175,6 @@ export default function ConsultationForm() {
           blur-[135px]
         "
       />
-
-      {/* GLOW — BOTTOM LEFT */}
 
       <div
         className="
@@ -174,7 +195,6 @@ export default function ConsultationForm() {
         className="relative z-10"
       >
         {/* HEADER */}
-
         <div className="mb-9">
           <span
             className="
@@ -212,342 +232,149 @@ export default function ConsultationForm() {
               text-white/55
             "
           >
-            Share your preferences and our property team will
-            contact you with a curated selection of premium
-            residences.
+            Share your preferences and our property
+            team will contact you with a curated
+            selection of premium residences.
           </p>
         </div>
 
         {/* FIELDS */}
-
         <div className="grid gap-5 sm:grid-cols-2">
           {/* NAME */}
-
-          <label className="group block">
-            <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
-              Full Name
-            </span>
-
-            <div
-              className="
-                flex
-                items-center
-                gap-3
-                rounded-[18px]
-                border
-                border-white/10
-                bg-black/25
-                px-4
-                transition-all
-                duration-300
-                focus-within:border-[#d6b56a]/45
-                focus-within:bg-black/35
-              "
-            >
-              <User
-                size={17}
-                className="shrink-0 text-[#d6b56a]"
-              />
-
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="Your name"
-                required
-                autoComplete="name"
-                className="
-                  h-14
-                  w-full
-                  bg-transparent
-                  text-sm
-                  text-white
-                  outline-none
-                  placeholder:text-white/25
-                "
-              />
-            </div>
-          </label>
+          <FormField
+            label="Full Name"
+            icon={<User size={17} />}
+          >
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              placeholder="Your name"
+              required
+              autoComplete="name"
+              className={inputClass}
+            />
+          </FormField>
 
           {/* EMAIL */}
-
-          <label className="group block">
-            <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
-              Email Address
-            </span>
-
-            <div
-              className="
-                flex
-                items-center
-                gap-3
-                rounded-[18px]
-                border
-                border-white/10
-                bg-black/25
-                px-4
-                transition-all
-                duration-300
-                focus-within:border-[#d6b56a]/45
-                focus-within:bg-black/35
-              "
-            >
-              <Mail
-                size={17}
-                className="shrink-0 text-[#d6b56a]"
-              />
-
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="name@email.com"
-                required
-                autoComplete="email"
-                className="
-                  h-14
-                  w-full
-                  bg-transparent
-                  text-sm
-                  text-white
-                  outline-none
-                  placeholder:text-white/25
-                "
-              />
-            </div>
-          </label>
+          <FormField
+            label="Email Address"
+            icon={<Mail size={17} />}
+          >
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="name@email.com"
+              required
+              autoComplete="email"
+              className={inputClass}
+            />
+          </FormField>
 
           {/* PHONE */}
-
-          <label className="group block">
-            <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
-              Phone Number
-            </span>
-
-            <div
-              className="
-                flex
-                items-center
-                gap-3
-                rounded-[18px]
-                border
-                border-white/10
-                bg-black/25
-                px-4
-                transition-all
-                duration-300
-                focus-within:border-[#d6b56a]/45
-                focus-within:bg-black/35
-              "
-            >
-              <Phone
-                size={17}
-                className="shrink-0 text-[#d6b56a]"
-              />
-
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                placeholder="+971 50 000 0000"
-                required
-                autoComplete="tel"
-                className="
-                  h-14
-                  w-full
-                  bg-transparent
-                  text-sm
-                  text-white
-                  outline-none
-                  placeholder:text-white/25
-                "
-              />
-            </div>
-          </label>
+          <FormField
+            label="Phone Number"
+            icon={<Phone size={17} />}
+          >
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              placeholder="+971 50 000 0000"
+              required
+              autoComplete="tel"
+              className={inputClass}
+            />
+          </FormField>
 
           {/* PROPERTY TYPE */}
-
-          <label className="group block">
-            <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
-              Property Type
-            </span>
-
-            <div
-              className="
-                flex
-                items-center
-                gap-3
-                rounded-[18px]
-                border
-                border-white/10
-                bg-black/25
-                px-4
-                transition-all
-                duration-300
-                focus-within:border-[#d6b56a]/45
-                focus-within:bg-black/35
-              "
+          <FormField
+            label="Property Type"
+            icon={<Building2 size={17} />}
+          >
+            <select
+              name="propertyType"
+              value={formData.propertyType}
+              onChange={handleChange}
+              required
+              className={inputClass}
             >
-              <Building2
-                size={17}
-                className="shrink-0 text-[#d6b56a]"
-              />
-
-              <select
-                name="propertyType"
-                value={formData.propertyType}
-                onChange={handleChange}
-                required
-                className="
-                  h-14
-                  w-full
-                  cursor-pointer
-                  bg-transparent
-                  text-sm
-                  text-white
-                  outline-none
-                "
+              <option
+                value=""
+                className="bg-[#0a0a0a]"
               >
-                <option
-                  value=""
-                  className="bg-[#0a0a0a]"
-                >
-                  Select property
-                </option>
+                Select property
+              </option>
 
-                <option
-                  value="villa"
-                  className="bg-[#0a0a0a]"
-                >
-                  Luxury Villa
-                </option>
+              <option
+                value="villa"
+                className="bg-[#0a0a0a]"
+              >
+                Luxury Villa
+              </option>
 
-                <option
-                  value="penthouse"
-                  className="bg-[#0a0a0a]"
-                >
-                  Penthouse
-                </option>
+              <option
+                value="penthouse"
+                className="bg-[#0a0a0a]"
+              >
+                Penthouse
+              </option>
 
-                <option
-                  value="apartment"
-                  className="bg-[#0a0a0a]"
-                >
-                  Premium Apartment
-                </option>
+              <option
+                value="apartment"
+                className="bg-[#0a0a0a]"
+              >
+                Premium Apartment
+              </option>
 
-                <option
-                  value="townhouse"
-                  className="bg-[#0a0a0a]"
-                >
-                  Townhouse
-                </option>
-              </select>
-            </div>
-          </label>
+              <option
+                value="townhouse"
+                className="bg-[#0a0a0a]"
+              >
+                Townhouse
+              </option>
+            </select>
+          </FormField>
 
           {/* LOCATION */}
-
-          <label className="group block">
-            <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
-              Preferred Location
-            </span>
-
-            <div
-              className="
-                flex
-                items-center
-                gap-3
-                rounded-[18px]
-                border
-                border-white/10
-                bg-black/25
-                px-4
-                transition-all
-                duration-300
-                focus-within:border-[#d6b56a]/45
-                focus-within:bg-black/35
-              "
-            >
-              <MapPin
-                size={17}
-                className="shrink-0 text-[#d6b56a]"
-              />
-
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="Dubai Marina"
-                required
-                autoComplete="address-level2"
-                className="
-                  h-14
-                  w-full
-                  bg-transparent
-                  text-sm
-                  text-white
-                  outline-none
-                  placeholder:text-white/25
-                "
-              />
-            </div>
-          </label>
+          <FormField
+            label="Preferred Location"
+            icon={<MapPin size={17} />}
+          >
+            <input
+              type="text"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              placeholder="Dubai Marina"
+              required
+              autoComplete="address-level2"
+              className={inputClass}
+            />
+          </FormField>
 
           {/* DATE */}
-
-          <label className="group block">
-            <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
-              Preferred Date
-            </span>
-
-            <div
-              className="
-                flex
-                items-center
-                gap-3
-                rounded-[18px]
-                border
-                border-white/10
-                bg-black/25
-                px-4
-                transition-all
-                duration-300
-                focus-within:border-[#d6b56a]/45
-                focus-within:bg-black/35
-              "
-            >
-              <CalendarDays
-                size={17}
-                className="shrink-0 text-[#d6b56a]"
-              />
-
-              <input
-                type="date"
-                name="preferredDate"
-                value={formData.preferredDate}
-                onChange={handleChange}
-                required
-                className="
-                  h-14
-                  w-full
-                  bg-transparent
-                  text-sm
-                  text-white
-                  outline-none
-                  [color-scheme:dark]
-                "
-              />
-            </div>
-          </label>
+          <FormField
+            label="Preferred Date"
+            icon={<CalendarDays size={17} />}
+          >
+            <input
+              type="date"
+              name="preferredDate"
+              value={formData.preferredDate}
+              onChange={handleChange}
+              required
+              min={getToday()}
+              className={`${inputClass} [color-scheme:dark]`}
+            />
+          </FormField>
         </div>
 
         {/* MESSAGE */}
-
         <label className="mt-5 block">
           <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
             Your Requirements
@@ -581,8 +408,7 @@ export default function ConsultationForm() {
           />
         </label>
 
-        {/* BOTTOM AREA */}
-
+        {/* BOTTOM */}
         <div
           className="
             mt-7
@@ -602,8 +428,9 @@ export default function ConsultationForm() {
               text-white/35
             "
           >
-            By submitting this form, you agree to be contacted by
-            a NestVille property advisor regarding your enquiry.
+            By submitting this form, you agree to be
+            contacted by a NestVille property advisor
+            regarding your enquiry.
           </p>
 
           <motion.button
@@ -640,16 +467,24 @@ export default function ConsultationForm() {
               disabled:opacity-60
             "
           >
-            {submitting
-              ? "Submitting..."
-              : "Request Consultation"}
-
-            {!submitting && <ArrowUpRight size={17} />}
+            {submitting ? (
+              <>
+                <Loader2
+                  size={16}
+                  className="animate-spin"
+                />
+                Submitting...
+              </>
+            ) : (
+              <>
+                Request Consultation
+                <ArrowUpRight size={17} />
+              </>
+            )}
           </motion.button>
         </div>
 
         {/* ERROR */}
-
         {submitError && (
           <motion.div
             initial={{
@@ -678,7 +513,6 @@ export default function ConsultationForm() {
         )}
 
         {/* SUCCESS */}
-
         {submitted && (
           <motion.div
             initial={{
@@ -693,22 +527,22 @@ export default function ConsultationForm() {
               mt-6
               rounded-[18px]
               border
-              border-[#d6b56a]/20
-              bg-[#d6b56a]/10
+              border-emerald-400/20
+              bg-emerald-400/10
               px-5
               py-4
-              text-sm
-              leading-6
-              text-[#e5ca89]
             "
           >
-            Thank you. A NestVille advisor will contact you
-            shortly.
+            <p className="text-sm text-emerald-300">
+              Consultation request submitted successfully.
+            </p>
+
+            <p className="mt-1 text-xs leading-5 text-emerald-300/60">
+              A NestVille advisor will contact you shortly.
+            </p>
           </motion.div>
         )}
       </form>
-
-      {/* BORDER */}
 
       <div
         className="
@@ -724,5 +558,56 @@ export default function ConsultationForm() {
         "
       />
     </motion.div>
+  );
+}
+
+const inputClass = `
+  h-14
+  w-full
+  bg-transparent
+  text-sm
+  text-white
+  outline-none
+  placeholder:text-white/25
+`;
+
+function FormField({
+  label,
+  icon,
+  children,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="group block">
+      <span className="mb-2 block text-[10px] uppercase tracking-[0.2em] text-white/45">
+        {label}
+      </span>
+
+      <div
+        className="
+          flex
+          items-center
+          gap-3
+          rounded-[18px]
+          border
+          border-white/10
+          bg-black/25
+          px-4
+          transition-all
+          duration-300
+          focus-within:border-[#d6b56a]/45
+          focus-within:bg-black/35
+        "
+      >
+        <span className="shrink-0 text-[#d6b56a]">
+          {icon}
+        </span>
+
+        {children}
+      </div>
+    </label>
   );
 }

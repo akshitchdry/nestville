@@ -1,917 +1,425 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { notFound } from "next/navigation";
 import {
   ArrowLeft,
-  Bath,
+  ArrowUpRight,
   BedDouble,
-  Building2,
-  CheckCircle2,
-  ImageIcon,
+  Bath,
+  Maximize2,
   MapPin,
-  Save,
+  Heart,
 } from "lucide-react";
 
-import { createClient } from "@/lib/supabase/client";
+import Navbar from "@/components/navbar/Navbar";
+import Footer from "@/components/footer/Footer";
 
-type PropertyForm = {
-  title: string;
+import PropertyGallery from "@/components/properties/PropertyGallery";
+import PropertyOverview from "@/components/properties/PropertyOverview";
+import PropertyAmenities from "@/components/properties/PropertyAmenities";
+import PropertyMap from "@/components/properties/PropertyMap";
+import PropertySidebar from "@/components/properties/PropertySidebar";
+import PropertyAgent from "@/components/properties/PropertyAgent";
+import SimilarProperties from "@/components/properties/SimilarProperties";
+
+import { createClient } from "@/lib/supabase/server";
+
+interface Property {
+  id: number;
   slug: string;
+  title: string;
   location: string;
   price: string;
-  bedrooms: string;
-  bathrooms: string;
-  area: string;
-  category: string;
-  image: string;
-  description: string;
-  status: "published" | "draft";
-  featured: boolean;
-};
+  bedrooms: number | null;
+  bathrooms: number | null;
+  area: string | null;
+  image: string | null;
+  category: string | null;
+  description: string | null;
+  status: string | null;
+  featured: boolean | null;
+}
 
-const initialForm: PropertyForm = {
-  title: "",
-  slug: "",
-  location: "",
-  price: "",
-  bedrooms: "",
-  bathrooms: "",
-  area: "",
-  category: "",
-  image: "",
-  description: "",
-  status: "published",
-  featured: false,
-};
+interface PropertyPageProps {
+  params: Promise<{
+    slug: string;
+  }>;
+}
 
-export default function EditPropertyPage() {
-  const params = useParams();
-  const router = useRouter();
+export default async function PropertyDetailPage({
+  params,
+}: PropertyPageProps) {
+  const { slug } = await params;
 
-  const slugParam = Array.isArray(params.slug)
-    ? params.slug[0]
-    : String(params.slug || "");
-
-  const [form, setForm] =
-    useState<PropertyForm>(initialForm);
-
-  const [propertyId, setPropertyId] =
-    useState<number | null>(null);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [success, setSuccess] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadProperty() {
-      if (!slugParam) {
-        if (mounted) {
-          setError("Invalid property URL.");
-          setLoading(false);
-        }
-
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError("");
-
-        const supabase = createClient();
-
-        const { data, error: fetchError } =
-          await supabase
-            .from("properties")
-            .select("*")
-            .eq("slug", slugParam)
-            .maybeSingle();
-
-        if (!mounted) {
-          return;
-        }
-
-        if (fetchError) {
-          console.error(
-            "Property fetch error:",
-            fetchError,
-          );
-
-          setError(
-            fetchError.message ||
-              "Property load nahi ho paayi.",
-          );
-
-          return;
-        }
-
-        if (!data) {
-          setError("Property nahi mili.");
-          return;
-        }
-
-        setPropertyId(data.id);
-
-        setForm({
-          title: data.title ?? "",
-          slug: data.slug ?? "",
-          location: data.location ?? "",
-          price: data.price ?? "",
-          bedrooms: String(
-            data.bedrooms ?? "",
-          ),
-          bathrooms: String(
-            data.bathrooms ?? "",
-          ),
-          area: data.area ?? "",
-          category: data.category ?? "",
-          image: data.image ?? "",
-          description:
-            data.description ?? "",
-          status:
-            data.status === "draft"
-              ? "draft"
-              : "published",
-          featured: Boolean(
-            data.featured,
-          ),
-        });
-      } catch (err) {
-        console.error(
-          "Property loading error:",
-          err,
-        );
-
-        if (mounted) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Property load nahi ho paayi.",
-          );
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    loadProperty();
-
-    return () => {
-      mounted = false;
-    };
-  }, [slugParam]);
-
-  function updateField(
-    field: keyof PropertyForm,
-    value: string | boolean,
-  ) {
-    setSuccess(false);
-    setError("");
-
-    setForm((current) => ({
-      ...current,
-      [field]: value,
-    }));
+  if (!slug) {
+    notFound();
   }
 
-  function createSlug(value: string) {
-    return value
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "");
-  }
+  const supabase = await createClient();
 
-  function handleTitleChange(value: string) {
-    updateField("title", value);
+  const {
+    data: property,
+    error,
+  } = await supabase
+    .from("properties")
+    .select(
+      `
+        id,
+        slug,
+        title,
+        location,
+        price,
+        bedrooms,
+        bathrooms,
+        area,
+        image,
+        category,
+        description,
+        status,
+        featured
+      `,
+    )
+    .eq("slug", slug)
+    .eq("status", "published")
+    .maybeSingle();
 
-    setForm((current) => ({
-      ...current,
-      title: value,
-      slug: createSlug(value),
-    }));
-  }
-
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
-    event.preventDefault();
-
-    if (saving || propertyId === null) {
-      return;
-    }
-
-    setSaving(true);
-    setSuccess(false);
-    setError("");
-
-    try {
-      const title = form.title.trim();
-      const slug = form.slug.trim();
-      const location = form.location.trim();
-      const price = form.price.trim();
-      const area = form.area.trim();
-      const category = form.category.trim();
-      const image = form.image.trim();
-      const description =
-        form.description.trim();
-
-      const bedrooms = Number(
-        form.bedrooms,
-      );
-
-      const bathrooms = Number(
-        form.bathrooms,
-      );
-
-      if (!title) {
-        setError(
-          "Property title required hai.",
-        );
-        return;
-      }
-
-      if (!slug) {
-        setError(
-          "Property slug required hai.",
-        );
-        return;
-      }
-
-      if (!location) {
-        setError(
-          "Location required hai.",
-        );
-        return;
-      }
-
-      if (!price) {
-        setError(
-          "Starting price required hai.",
-        );
-        return;
-      }
-
-      if (!Number.isInteger(bedrooms) || bedrooms < 1) {
-        setError(
-          "Bedrooms ki valid value enter karo.",
-        );
-        return;
-      }
-
-      if (
-        !Number.isInteger(bathrooms) ||
-        bathrooms < 1
-      ) {
-        setError(
-          "Bathrooms ki valid value enter karo.",
-        );
-        return;
-      }
-
-      if (!area) {
-        setError(
-          "Property area required hai.",
-        );
-        return;
-      }
-
-      if (!category) {
-        setError(
-          "Property category required hai.",
-        );
-        return;
-      }
-
-      if (!image) {
-        setError(
-          "Property image path required hai.",
-        );
-        return;
-      }
-
-      if (!description) {
-        setError(
-          "Property description required hai.",
-        );
-        return;
-      }
-
-      const supabase = createClient();
-
-      const { error: updateError } =
-        await supabase
-          .from("properties")
-          .update({
-            title,
-            slug,
-            location,
-            price,
-            bedrooms,
-            bathrooms,
-            area,
-            category,
-            image,
-            description,
-            status: form.status,
-            featured: form.featured,
-          })
-          .eq("id", propertyId);
-
-      if (updateError) {
-        console.error(
-          "Property update error:",
-          updateError,
-        );
-
-        if (updateError.code === "23505") {
-          setError(
-            "Ye slug kisi aur property me already use ho raha hai.",
-          );
-        } else {
-          setError(
-            updateError.message ||
-              "Property update nahi ho paayi.",
-          );
-        }
-
-        return;
-      }
-
-      setSuccess(true);
-
-      setTimeout(() => {
-        router.push("/admin/properties");
-        router.refresh();
-      }, 800);
-    } catch (err) {
-      console.error(
-        "Property update error:",
-        err,
-      );
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Property update karte waqt error aa gaya.",
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#050605] text-white">
-        <div className="text-center">
-          <div className="mx-auto h-8 w-8 animate-spin rounded-full border border-white/10 border-t-[#d6b56a]" />
-
-          <p className="mt-5 text-sm text-white/40">
-            Loading property...
-          </p>
-        </div>
-      </main>
+  if (error) {
+    console.error(
+      "Property detail fetch error:",
+      error,
     );
+
+    notFound();
   }
 
-  if (propertyId === null) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-[#050605] px-6 text-white">
-        <div className="max-w-md text-center">
-          <Building2
-            size={34}
-            className="mx-auto text-white/15"
-          />
-
-          <p className="mt-5 text-sm text-red-300/80">
-            {error || "Property nahi mili."}
-          </p>
-
-          <Link
-            href="/admin/properties"
-            className="mt-7 inline-flex items-center gap-2 rounded-full border border-white/10 px-6 py-3 text-[9px] uppercase tracking-[0.18em] text-white/50 transition hover:border-[#d6b56a]/40 hover:text-[#d6b56a]"
-          >
-            <ArrowLeft size={13} />
-            Back to Properties
-          </Link>
-        </div>
-      </main>
-    );
+  if (!property) {
+    notFound();
   }
+
+  const data = property as Property;
+
+  const image =
+    data.image?.trim() ||
+    "/images/properties/residence-1.webp";
+
+  const bedrooms = data.bedrooms ?? 0;
+  const bathrooms = data.bathrooms ?? 0;
+  const area = data.area || "Area on Request";
+
+  const category =
+    data.category || "Luxury Property";
+
+  const description =
+    data.description ||
+    `Discover ${data.title}, an exceptional ${category.toLowerCase()} located in ${data.location}. Experience refined architecture, premium interiors and an elevated lifestyle with NestVille.`;
 
   return (
-    <main className="min-h-screen bg-[#050605] text-white">
-      {/* HEADER */}
+    <main className="min-h-screen bg-[#050505] text-white">
+      <Navbar />
 
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#060806]/90 backdrop-blur-2xl">
-        <div className="mx-auto flex max-w-[1400px] items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
-          <div className="flex items-center gap-4">
+      {/* HERO */}
+      <section className="relative overflow-hidden bg-[#050505] px-5 pb-16 pt-32 sm:px-8 lg:px-10">
+        {/* GOLD GLOW */}
+        <div
+          className="
+            pointer-events-none
+            absolute
+            -left-40
+            top-0
+            h-[600px]
+            w-[600px]
+            rounded-full
+            bg-[#d6b56a]/10
+            blur-[190px]
+          "
+        />
+
+        {/* GREEN GLOW */}
+        <div
+          className="
+            pointer-events-none
+            absolute
+            -right-40
+            bottom-0
+            h-[500px]
+            w-[500px]
+            rounded-full
+            bg-emerald-950/20
+            blur-[180px]
+          "
+        />
+
+        <div className="relative z-10 mx-auto max-w-[1450px]">
+          {/* BACK */}
+          <Link
+            href="/properties"
+            className="
+              inline-flex
+              items-center
+              gap-3
+              rounded-full
+              border
+              border-white/10
+              bg-white/[0.025]
+              px-5
+              py-3
+              text-[9px]
+              uppercase
+              tracking-[0.2em]
+              text-white/45
+              transition-all
+              hover:border-[#d6b56a]/40
+              hover:text-[#d6b56a]
+            "
+          >
+            <ArrowLeft size={14} />
+            All Properties
+          </Link>
+
+          {/* BREADCRUMB */}
+          <div className="mt-10 flex flex-wrap items-center gap-3 text-[9px] uppercase tracking-[0.25em] text-white/25">
             <Link
-              href="/admin/properties"
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/10 text-white/45 transition hover:border-[#d6b56a]/40 hover:text-[#d6b56a]"
+              href="/"
+              className="transition hover:text-white/60"
             >
-              <ArrowLeft size={17} />
+              Home
             </Link>
 
-            <div>
-              <p className="text-[8px] uppercase tracking-[0.28em] text-[#d6b56a]">
-                Property Management
-              </p>
+            <span>/</span>
 
-              <h1 className="mt-1 text-xl font-light sm:text-2xl">
-                Edit Property
-              </h1>
+            <Link
+              href="/properties"
+              className="transition hover:text-white/60"
+            >
+              Properties
+            </Link>
+
+            <span>/</span>
+
+            <span className="text-[#d6b56a]">
+              {data.title}
+            </span>
+          </div>
+
+          {/* TITLE */}
+          <div className="mt-8 max-w-5xl">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="rounded-full border border-[#d6b56a]/25 bg-[#d6b56a]/10 px-4 py-2 text-[8px] uppercase tracking-[0.2em] text-[#d6b56a]">
+                {category}
+              </span>
+
+              {data.featured && (
+                <span className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-[8px] uppercase tracking-[0.2em] text-white/55">
+                  Featured Residence
+                </span>
+              )}
             </div>
+
+            <h1 className="mt-7 text-[clamp(3rem,7vw,7rem)] font-light leading-[0.88] tracking-[-0.05em]">
+              {data.title}
+            </h1>
+
+            <div className="mt-7 flex flex-wrap items-center gap-x-7 gap-y-4">
+              <div className="flex items-center gap-2 text-sm text-white/45">
+                <MapPin
+                  size={16}
+                  className="text-[#d6b56a]"
+                />
+
+                {data.location}
+              </div>
+
+              <div className="h-4 w-px bg-white/10" />
+
+              <div className="text-sm text-[#d6b56a]">
+                {data.price}
+              </div>
+            </div>
+          </div>
+
+          {/* HERO IMAGE */}
+          <div className="relative mt-14 overflow-hidden rounded-[34px] border border-white/10 bg-[#0b0c0b] shadow-[0_35px_100px_rgba(0,0,0,0.45)]">
+            <div className="relative aspect-[16/8] min-h-[380px]">
+              <img
+                src={image}
+                alt={data.title}
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+
+              <div className="absolute bottom-6 left-6 right-6 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                {/* STATS */}
+                <div className="flex flex-wrap gap-2">
+                  <HeroStat
+                    icon={<BedDouble size={15} />}
+                    value={`${bedrooms} Beds`}
+                  />
+
+                  <HeroStat
+                    icon={<Bath size={15} />}
+                    value={`${bathrooms} Baths`}
+                  />
+
+                  <HeroStat
+                    icon={<Maximize2 size={15} />}
+                    value={area}
+                  />
+                </div>
+
+                {/* ACTION */}
+                <Link
+                  href="#viewing"
+                  className="
+                    inline-flex
+                    items-center
+                    justify-center
+                    gap-3
+                    rounded-full
+                    bg-[#d6b56a]
+                    px-6
+                    py-4
+                    text-[9px]
+                    font-semibold
+                    uppercase
+                    tracking-[0.2em]
+                    text-black
+                    transition-all
+                    hover:scale-[1.03]
+                    hover:bg-[#e5ca85]
+                  "
+                >
+                  Schedule Viewing
+                  <ArrowUpRight size={15} />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* QUICK INFO */}
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <QuickInfo
+              label="Starting Price"
+              value={data.price}
+            />
+
+            <QuickInfo
+              label="Property Type"
+              value={category}
+            />
+
+            <QuickInfo
+              label="Location"
+              value={data.location}
+            />
           </div>
         </div>
-      </header>
-
-      {/* CONTENT */}
-
-      <section className="px-5 py-10 sm:px-8 lg:px-10">
-        <form
-          onSubmit={handleSubmit}
-          className="mx-auto max-w-[1400px]"
-        >
-          <div className="mb-10">
-            <div className="flex items-center gap-3">
-              <span className="h-px w-8 bg-[#d6b56a]" />
-
-              <p className="text-[9px] uppercase tracking-[0.3em] text-[#d6b56a]">
-                Existing Residence
-              </p>
-            </div>
-
-            <h2 className="mt-5 text-4xl font-light tracking-[-0.035em] sm:text-5xl">
-              Update{" "}
-              <span className="text-[#d6b56a]">
-                property.
-              </span>
-            </h2>
-
-            <p className="mt-4 max-w-xl text-sm leading-7 text-white/40">
-              Changes save hote hi Supabase
-              database me update ho jayenge.
-            </p>
-          </div>
-
-          <div className="grid gap-7 xl:grid-cols-[1fr_360px]">
-            {/* FORM */}
-
-            <div className="space-y-7">
-              <FormSection
-                title="Basic Information"
-                description="Main property information."
-              >
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <InputField
-                    label="Property Title"
-                    placeholder="The Aurelia Estate"
-                    value={form.title}
-                    onChange={
-                      handleTitleChange
-                    }
-                    required
-                  />
-
-                  <InputField
-                    label="Slug"
-                    placeholder="the-aurelia-estate"
-                    value={form.slug}
-                    onChange={(value) =>
-                      updateField(
-                        "slug",
-                        value,
-                      )
-                    }
-                    required
-                  />
-
-                  <InputField
-                    label="Location"
-                    placeholder="Palm Jumeirah, Dubai"
-                    value={form.location}
-                    onChange={(value) =>
-                      updateField(
-                        "location",
-                        value,
-                      )
-                    }
-                    icon={
-                      <MapPin size={15} />
-                    }
-                    required
-                  />
-
-                  <InputField
-                    label="Starting Price"
-                    placeholder="$6.2M"
-                    value={form.price}
-                    onChange={(value) =>
-                      updateField(
-                        "price",
-                        value,
-                      )
-                    }
-                    required
-                  />
-
-                  <InputField
-                    label="Category"
-                    placeholder="Waterfront Estate"
-                    value={form.category}
-                    onChange={(value) =>
-                      updateField(
-                        "category",
-                        value,
-                      )
-                    }
-                    icon={
-                      <Building2 size={15} />
-                    }
-                    required
-                  />
-
-                  <InputField
-                    label="Area"
-                    placeholder="8,400 sq. ft."
-                    value={form.area}
-                    onChange={(value) =>
-                      updateField(
-                        "area",
-                        value,
-                      )
-                    }
-                    required
-                  />
-                </div>
-              </FormSection>
-
-              <FormSection
-                title="Property Details"
-                description="Residence configuration."
-              >
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <InputField
-                    label="Bedrooms"
-                    type="number"
-                    placeholder="5"
-                    value={form.bedrooms}
-                    onChange={(value) =>
-                      updateField(
-                        "bedrooms",
-                        value,
-                      )
-                    }
-                    icon={
-                      <BedDouble size={15} />
-                    }
-                    required
-                  />
-
-                  <InputField
-                    label="Bathrooms"
-                    type="number"
-                    placeholder="7"
-                    value={form.bathrooms}
-                    onChange={(value) =>
-                      updateField(
-                        "bathrooms",
-                        value,
-                      )
-                    }
-                    icon={
-                      <Bath size={15} />
-                    }
-                    required
-                  />
-                </div>
-              </FormSection>
-
-              <FormSection
-                title="Property Media"
-                description="Main property image."
-              >
-                <InputField
-                  label="Image Path"
-                  placeholder="/images/properties/residence-1.webp"
-                  value={form.image}
-                  onChange={(value) =>
-                    updateField(
-                      "image",
-                      value,
-                    )
-                  }
-                  icon={
-                    <ImageIcon size={15} />
-                  }
-                  required
-                />
-
-                <p className="mt-3 text-[10px] leading-5 text-white/25">
-                  Example: /images/properties/residence-1.webp
-                </p>
-              </FormSection>
-
-              <FormSection
-                title="Description"
-                description="Property introduction."
-              >
-                <textarea
-                  value={form.description}
-                  onChange={(event) =>
-                    updateField(
-                      "description",
-                      event.target.value,
-                    )
-                  }
-                  required
-                  rows={8}
-                  placeholder="Describe this residence..."
-                  className="w-full resize-none rounded-[20px] border border-white/10 bg-black/20 px-5 py-4 text-sm leading-7 text-white outline-none placeholder:text-white/20 focus:border-[#d6b56a]/40"
-                />
-              </FormSection>
-
-              <FormSection
-                title="Publishing"
-                description="Control website visibility."
-              >
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-3 block text-[9px] uppercase tracking-[0.2em] text-white/40">
-                      Status
-                    </span>
-
-                    <select
-                      value={form.status}
-                      onChange={(event) =>
-                        updateField(
-                          "status",
-                          event.target
-                            .value as
-                            | "published"
-                            | "draft",
-                        )
-                      }
-                      className="w-full rounded-[18px] border border-white/10 bg-[#080a08] px-4 py-4 text-sm text-white outline-none focus:border-[#d6b56a]/40"
-                    >
-                      <option value="published">
-                        Published
-                      </option>
-
-                      <option value="draft">
-                        Draft
-                      </option>
-                    </select>
-                  </label>
-
-                  <label className="flex cursor-pointer items-center gap-4 rounded-[18px] border border-white/10 bg-black/20 px-5 py-4">
-                    <input
-                      type="checkbox"
-                      checked={form.featured}
-                      onChange={(event) =>
-                        updateField(
-                          "featured",
-                          event.target.checked,
-                        )
-                      }
-                      className="h-4 w-4 accent-[#d6b56a]"
-                    />
-
-                    <span>
-                      <span className="block text-sm text-white/70">
-                        Featured Property
-                      </span>
-
-                      <span className="mt-1 block text-xs text-white/30">
-                        Highlight this residence.
-                      </span>
-                    </span>
-                  </label>
-                </div>
-              </FormSection>
-            </div>
-
-            {/* SIDEBAR */}
-
-            <aside className="space-y-5 xl:sticky xl:top-28 xl:self-start">
-              <div className="rounded-[26px] border border-white/10 bg-white/[0.025] p-6">
-                <p className="text-[9px] uppercase tracking-[0.24em] text-[#d6b56a]">
-                  Save Changes
-                </p>
-
-                <p className="mt-4 text-sm leading-7 text-white/40">
-                  Review your changes and update
-                  the residence.
-                </p>
-
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="mt-6 flex w-full items-center justify-center gap-3 rounded-full bg-gradient-to-r from-[#a57b36] via-[#dfbd71] to-[#a57b36] px-6 py-4 text-[9px] font-semibold uppercase tracking-[0.18em] text-[#050605] transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Save size={15} />
-
-                  {saving
-                    ? "Updating..."
-                    : "Update Property"}
-                </button>
-
-                {error && (
-                  <div className="mt-5 rounded-[18px] border border-red-400/15 bg-red-400/[0.06] p-4 text-xs leading-6 text-red-300">
-                    {error}
-                  </div>
-                )}
-
-                {success && (
-                  <div className="mt-5 flex gap-3 rounded-[18px] border border-emerald-400/15 bg-emerald-400/[0.07] p-4">
-                    <CheckCircle2
-                      size={17}
-                      className="shrink-0 text-emerald-300"
-                    />
-
-                    <p className="text-xs text-emerald-200">
-                      Property updated successfully.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* PREVIEW */}
-
-              <div className="rounded-[26px] border border-white/10 bg-white/[0.025] p-6">
-                <p className="text-[9px] uppercase tracking-[0.24em] text-[#d6b56a]">
-                  Live Preview
-                </p>
-
-                <div className="mt-5 overflow-hidden rounded-[20px] border border-white/10 bg-black/20">
-                  <div className="h-44 bg-white/[0.025]">
-                    {form.image ? (
-                      <img
-                        src={form.image}
-                        alt={
-                          form.title ||
-                          "Property"
-                        }
-                        className="h-full w-full object-cover"
-                        onError={(event) => {
-                          event.currentTarget.style.display =
-                            "none";
-                        }}
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center">
-                        <ImageIcon
-                          size={30}
-                          className="text-white/15"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-5">
-                    <p className="text-[8px] uppercase tracking-[0.2em] text-[#d6b56a]">
-                      {form.category ||
-                        "Property"}
-                    </p>
-
-                    <h3 className="mt-3 text-xl font-light">
-                      {form.title ||
-                        "Property Title"}
-                    </h3>
-
-                    <p className="mt-2 text-xs text-white/35">
-                      {form.location ||
-                        "Location"}
-                    </p>
-
-                    <p className="mt-4 text-lg text-[#d6b56a]">
-                      {form.price ||
-                        "$0"}
-                    </p>
-
-                    <div className="mt-5 flex gap-3 border-t border-white/10 pt-4 text-[9px] text-white/35">
-                      <span>
-                        {form.bedrooms ||
-                          "0"}{" "}
-                        Beds
-                      </span>
-
-                      <span>
-                        {form.bathrooms ||
-                          "0"}{" "}
-                        Baths
-                      </span>
-
-                      <span>
-                        {form.area ||
-                          "—"}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </aside>
-          </div>
-        </form>
       </section>
+
+      {/* OVERVIEW + SIDEBAR */}
+      <section className="relative bg-[#070707] px-5 py-24 sm:px-8 lg:px-10">
+        <div className="mx-auto grid max-w-[1450px] gap-10 xl:grid-cols-[1fr_420px]">
+          <PropertyOverview
+            title={data.title}
+            description={description}
+            bedrooms={bedrooms}
+            bathrooms={bathrooms}
+            area={area}
+            type={category}
+            possession="Ready to Move"
+            parking="Private Parking"
+            facing="Premium"
+          />
+
+          <div
+            id="viewing"
+            className="xl:pt-28"
+          >
+            <PropertySidebar
+              price={data.price}
+              propertyId={`NV-${String(data.id).padStart(3, "0")}`}
+              title={data.title}
+              bookingAmount="On Request"
+              maintenance="On Request"
+              possession="Ready to Move"
+              brochureHref="/brochures/property-brochure.pdf"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* GALLERY */}
+      <PropertyGallery
+        title={data.title}
+        images={[
+          {
+            id: 1,
+            src: image,
+            alt: `${data.title} exterior`,
+            label: "Residence",
+          },
+        ]}
+      />
+
+      {/* AMENITIES */}
+      <PropertyAmenities />
+
+      {/* LOCATION */}
+      <PropertyMap />
+
+      {/* AGENT */}
+      <PropertyAgent />
+
+      {/* SIMILAR */}
+      <SimilarProperties />
+
+      {/* FOOTER */}
+      <Footer />
     </main>
   );
 }
 
-/* FORM SECTION */
+/* =========================================
+   HERO STAT
+========================================= */
 
-function FormSection({
-  title,
-  description,
-  children,
+function HeroStat({
+  icon,
+  value,
 }: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
+  icon: React.ReactNode;
+  value: string;
 }) {
   return (
-    <section className="rounded-[28px] border border-white/10 bg-white/[0.025] p-6 sm:p-7">
-      <div className="mb-7 border-b border-white/[0.07] pb-5">
-        <h3 className="text-xl font-light">
-          {title}
-        </h3>
+    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/45 px-4 py-3 text-[9px] text-white/70 backdrop-blur-xl">
+      <span className="text-[#d6b56a]">
+        {icon}
+      </span>
 
-        <p className="mt-2 text-xs text-white/35">
-          {description}
-        </p>
-      </div>
-
-      {children}
-    </section>
+      {value}
+    </div>
   );
 }
 
-/* INPUT */
+/* =========================================
+   QUICK INFO
+========================================= */
 
-function InputField({
+function QuickInfo({
   label,
   value,
-  onChange,
-  placeholder,
-  type = "text",
-  required = false,
-  icon,
 }: {
   label: string;
   value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  type?: string;
-  required?: boolean;
-  icon?: React.ReactNode;
 }) {
   return (
-    <label className="block">
-      <span className="mb-3 block text-[9px] uppercase tracking-[0.2em] text-white/40">
+    <div className="rounded-[22px] border border-white/10 bg-white/[0.025] px-6 py-5">
+      <p className="text-[8px] uppercase tracking-[0.2em] text-white/25">
         {label}
-      </span>
+      </p>
 
-      <div className="relative">
-        {icon && (
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d6b56a]/60">
-            {icon}
-          </span>
-        )}
-
-        <input
-          type={type}
-          value={value}
-          required={required}
-          min={
-            type === "number"
-              ? 1
-              : undefined
-          }
-          onChange={(event) =>
-            onChange(
-              event.target.value,
-            )
-          }
-          placeholder={placeholder}
-          className={`w-full rounded-[18px] border border-white/10 bg-black/20 py-4 pr-4 text-sm text-white outline-none placeholder:text-white/20 focus:border-[#d6b56a]/40 ${
-            icon ? "pl-11" : "pl-4"
-          }`}
-        />
-      </div>
-    </label>
+      <p className="mt-2 truncate text-sm text-white/70">
+        {value}
+      </p>
+    </div>
   );
 }
